@@ -328,6 +328,47 @@ textarea:focus{border-color:var(--accent);background:#fff;}
   .cmp-head,.cmp-table th,.cb.c0,.risk-badge,.food-note{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .cmp-section{page-break-inside:avoid;}
 }
+
+/* 특이 IgE · 면역치료 */
+.val-line{font-size:10px;color:#2d5a8e;font-weight:600;margin-top:2px;}
+.val{font-size:10px;color:#555;}
+.neg-line{font-size:10.5px;color:#777;margin:-4px 0 10px;}
+.it-box{display:none;flex-direction:column;gap:5px;background:#f6f3fc;border:1px solid #e0d8f2;border-radius:6px;padding:8px 9px;font-size:11px;}
+.it-title{font-weight:700;color:#4a3c78;font-size:11.5px;}
+.it-box .on{color:#27ae60;font-weight:600;}
+.it-box .m{color:#888;font-size:10px;}
+.it-item{background:#fff;border:1px solid #e6e0f3;border-radius:5px;padding:5px 7px;}
+.it-item.ended{opacity:.75;}
+.it-item .acts{display:flex;gap:8px;margin-top:2px;}
+.it-item .acts button{border:none;background:none;cursor:pointer;font-size:10.5px;color:var(--accent);padding:0;font-family:inherit;}
+.it-item .acts button.x{color:#c0392b;}
+.it-form{display:flex;flex-direction:column;gap:4px;}
+.it-form label{font-size:10px;color:var(--ink2);font-weight:600;margin-top:2px;}
+.it-form input,.it-form select{padding:6px 8px;border:1.5px solid var(--border);border-radius:5px;font-family:inherit;font-size:12px;background:#fff;}
+.it-form .row{display:flex;gap:6px;margin-top:4px;}
+.it-section{margin-top:14px;border:1.5px solid #cfe3d6;border-radius:8px;overflow:hidden;}
+.it-head{background:#2d7a4f;color:#fff;padding:8px 14px;display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;}
+.it-head .sub{margin-left:auto;font-size:10px;font-weight:400;opacity:.9;}
+.it-courses{margin-bottom:8px;line-height:2;}
+.it-chip{display:inline-block;background:#f1f1f1;color:#555;border-radius:10px;padding:1px 8px;font-size:10.5px;}
+.it-chip.on{background:#e3f4ea;color:#1a5c3a;font-weight:600;}
+.cur-row td{background:#fffbe6;font-weight:600;}
+.it-charts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.it-chart{border:1px solid #eee;border-radius:6px;padding:6px 8px;}
+.it-chart .t{font-size:10.5px;font-weight:600;color:#444;margin-bottom:2px;}
+.itl-head{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.itl-filters{display:flex;flex-wrap:wrap;gap:4px;}
+.itl-filters button{border:1px solid var(--border);background:#fff;border-radius:12px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit;color:var(--ink2);}
+.itl-filters button.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.itl td{vertical-align:middle;}
+.itl .m{color:#888;font-size:10px;}
+.due.warn{color:#b9770e;font-weight:700;}
+.due.bad{color:#c0392b;font-weight:700;}
+@media (max-width:700px){ .it-charts{grid-template-columns:1fr;} }
+@media print {
+  .it-head,.it-chip,.cur-row td{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .it-section{page-break-inside:avoid;}
+}
 </style>
 </head>
 <body>
@@ -336,7 +377,7 @@ textarea:focus{border-color:var(--accent);background:#fff;}
   <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaYAAABQCAIAAADdr0bkAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAALiMAAC4jAXilP3YAAAAHdElNRQfqBBEKCgCRVmkiAABItUlEQVR42u19d5xVxdn/M3Pa7W0rCEuvNpqUICioaGzYsKCiscS8ouanvvaKFUxMgpqYRFTUCEbF3kCwIlJURDosILtI2XJ39/bTZn5/zD2zZ++9u3t3hcAb7/Phs65nz5kz55mZ7zx9EKUUOkgUAAFQShFCe5P6lzWxetUUERrgU8aUuAUEAIAQ6mizBSpQgQp0oAl1AvIAgFCKAGpV49UfG1OESAhRgJRJDw84TjvMx9CugHoFKlCBDjXCnXiGoSQCtLQmnjCJQ8AIIYyQR8TrG1M7YhpCqDM4WqACFahAB5g6A3kAgBFSCalLGTJGhAIAUAoUACPYm9Q7JzkWqEAFKtCBpk5CHqWUANiBjWux1FJpC7BXoAIV6FCjTkIeKhjqClSgAv0fpE5CXoEKVKAC/V+kAuQVqEAF+gVRAfIKVKAC/YKoAHkFKlCBfkFUgLwCFahAvyAqQF6BClSgXxB1Pi6vtbC7QjhegQpUoEOWOh+XJ9jCj4FVGQAAAMnKNisE7hWoQAU61Ejk4lr+0hkCIJTKAu7ilNY3prwSIhQwQgQAA/TwyAiAApCOpJ0h60chxLlABSrQgSMRgOXGdgxqCKWU0vGlntqUUZMyBAQUgAKML/V0cUqEUtxB6KKUAlCEEKtJdbDZUqACFei/kxAhBCEUN8zalGnmIZcJCIoU0SsJDJuSJlnbkKxJGTJG/X2Onh6Z492epJ4wSD6dcIu43CmBVYOvgHoFKlCBDhAhSul39YlltfEUoZCPKopAwXhEkWtMiTtbmmNXwqrx0e7InqSRZ0kVjFBXl3RyV29QFgt4V6ACFejAEVrXkHj/p4iMkZA30BBK4wY5rZv/6KDTtLwW6eYAdELn/diwL2W4hA74RhIG6eqSLuwZFAtFlQtUoAIdMMLfhpMSQgJChJnT2vvH5DiHgNc0JAmlGABZ/wAAIfRjXKtJGW4R59Ma/+cW8Z6kXhUvlBctUIEKdAAJJw2CUXORu3aJQRJGoJnEpOmnEEpXk6KURnUCkJeKzImVFwWAqG4WyosWqEAFOnCEixRBJxR3RI/ECAxCfZIgonRReEIpC0lBCJU4ROhgUB5CaTmxxCF2VKWlLC7aIpL1j/WwgKMFKlCBAEAcV+rZl2qMG0TOG/Y0kyKERpe4AYAACDaUIpR2c0kDfY51jUmX2AFbXswgRwedXZ0SbWkczEkcxDiQcS9Ka88WTIMFKlCBgHlsa1L6VzXxmpSRT5AKQiggCb8qcffwyMy72qSZ9aohC6iLUxIQopQaFL6qjVVGVI3kJV3JGOdzICSFZoWZ2mCOUdIgSZMkTaITSiggBISCjFE3l5QR+MJ154KTpEAF+qVROi4PAFImMSltTx6iCBAT39i5jl/WxFeHkzqlCKBIEU7u6uvCJDWEdEI1QvIQsKiCsYjTpkCEEKWZORh2sQ5ZUEUorVON3Ql9T9KoV424QVRCDUIJUKDAOlCsiFf0DWGEMpJMkNWUxYYC+BWoQL8IEpEFB468Y0rYWT8CQqvq4ktrYh5JUBACgNqU8U510yW9Qy4BmZRKGElYyLNNBqDZcchcsmMIxSS7mpS+JaLuiGn1qqERyq4LCBCAiJlhkN0Msi30hjWeoQKn32uh7cEejgIVqEAHlkTmdABKO+QqxQAmpWsbU04RI8uH4BJxo2ZujaSGhFyogw3y9NoWeMeEPpsauyOmrg4nq+KaRqiIkIiRU8g8TY1aPylN67D8J0JoR0zd0JRKmTQkC0cEnMzZQiwDYraAWaACFei/iURL5unAQmfYoRqESVhpVREhZkGLGSQNdj9DamIQhRBiYYAIoDquLa+L74zrQKksYKeAOLS12xS22llZF/90bwwjQAi2UfihITnI7xhd4vZJAnP4FtLdClSg/24SO/cYpWBSaubyrhr5uSzabhyh5rDnhEGW1sTWNaYIUAVjAMT+1C4wUcubzLzAdSljaU3cKWJskwS/b0hWRtWxJZ6jQ06w3niAUC9D7C0A638lFUb5EKdOQh5CoJrUIJnQgAASplVKoFNaIhe1mHS2I6Yu3hNt0EyHgBEgarVqf2+zVa7lRQogCwghZFIqILQroRuUyoBMmzTnFLBG6MI9kZ1x7aQuXqeI9zvqsaYIIYS0KLIgCELbQmVOy8CBW0LZr/sFLtdO85zPW0KIvRGMMcb40Bnl/zwd9Gmc8boOQx61tM6oYeqEKkKL/DCMUEQnCKGOpV/YusvdKUwP/bImjgBcAiYWqDHDIz873KTUIJQCKAKmtEUWCaXUxS5SAARCSyZzty9GyCmgTZFUrWqc0c1X6pD2L+qxRtjUb3swsvmQMX6shf0rhFIrhjzjdSyj5pej5vMvzdiZ8uQ5T0MSBKG1v+b5xkOH8z9zF/wPf2CeI9hhyOPGu5qUYWa8EkBA0KiZSZM40wDUoR4DskWTfLwn8l19krlHzDTYIYa2GCEKoBJKKPWIuIdbdot4Y1Mqg4MUwC9x1Zb28MhOAeuEShgRiwVp9wilLgE3auarPzae2d1f4Zb3I+oRQjDGa9et++STT5xOJyWUXZwy5bzi4uKcr+AomXsI9utE4a3lj8g/nzJlIvYWShFCGOODsuA7gVnZX6Sq6vxXXkkmkljACKFUMjV06JBx48axULBMlejnvTFnB5gywSO9KKXtipk5m4L9sQt29AN/TrIpZ2+7r+u4lGdFk/yU0LMbFhCKGaQmaVS4JRZakiefKfcbAyCAD36KrGtMucVm4Q5sIKWaBCNU4ZIG+R09PLJPEjZHUt83JJ1CZkmCYofIOkwBfJIwqYv3o92RpEkUATOfBueTSamMkU7pm1WNZ1cE9iPqMchbt3bd7NlPhEIh0zQBwDCM4ycc3xrkmaYpCMLnn3/x3nvvuT1uQiglRJbl3//+Bp/P13aXWps3bStWCKGn//6PnTt3KoqMACWSyaOOPPKSSy7OuVZ/PrU9O2F/QG1H9Sk2TN99t3r+K6+43S4mKVBKp187vby8jP213Zeqqjp37gv19fWiJAkYh8MNV155BYO87C9l4xiPx/8ye3YymcRYwBjFY/HJZ00+duxYNgc6ytIOKRNtNwU/exdMpyo0Nc1+4kld0xDGGKN4PH7eueeOGjXK/oHU8lVSK0y4o8RgHWO8atU3r772mtvtIoRSSkRRvOGGG4KBQCelPD6LYrq5J6lLGGVEh7Aa8dtjqpWbkTeXrSOEMEIf7Y6sbUx5RExs4igLqTMoNQjt5VFGFrsq3DLn1/rGFLL1gf2iYFTKknYtmWKA31HiEFfWJzY2pVhuBrUhKaFURMig9O3qpvN7BMqcHdNw7Vp59p8URQmFQsFgkEOegAWeGpwxpdiVysrKN996i6GkaZoul+t3v7sGcilZzYHWlDKQYrISv8JmA38q5+csXbp09erVLpcbIWiKRFKp1CWXXHzgPDlMJFm06ONYPCZgAQAIMV0u96RJJwmC0Ln3cj4wwGJ84FdYKBK/ktE+A7XqXdVvvfUWHyZCyLRLLy0vL2t3oPn/BgIBQogkSYzhLpfTPjoZo4wQ0jRt4cJFTU0RURQEQQiHw0cedeSxY8d2VORh/d+yZcvq1d8rikIpQQirmjp61KgePXrkCdn2fiKEnpkzZ9u2bQ7FAQiSieRRRx918dSp9l2Qj2Mbo5xIJj/66KNEMilgLAhCONwwYviIUaNGZXADAASMIe9OZpNpmhjjqqoqPoKEEEVRrr7qqs5DHsviwghtiapxgzgFbHcaMGFKwqgyqo4tcUsYcd7lw2KGd1/VxL4PJ9N4Z1v/GKGUSXySMK6rZ7DfAVZENAZo0slPCZ3hF3+TQWixIgZlgTfOQC2kiKd09R0RcHy2N7Y7qTsFDNbk46inE/rOrqapvYLMFNhRMT7jOnNTAALTImt4UBtiDgAoihIIBHw+HyHENE2n09maLsCnnX2T51f4K/iVnOPi8bj9fr/L5WKscLtdnZ58eZJhmLOfeKKqutqhKBRAU9WuXbtOmHB8h6QbzgduxxEEwS4+sCt24YetDWi5ebBfZEn2+/2M52w3wlmdyTnQ6UUrCGyI2cgahsHMNek50Eo7Pp8PAERRxBibhCiy0glmMlBbtuzrBx96KBQKGYYhCEJjY+OfHn+8o5DHObPsq2XLV6zweDwA0NTUpGraxVOnZjOt7ZZdTqfP55MkiY0CIUSWZfYwfxfbkt988831GzY6HY78j81BAKZperyeq6+6ShRFAJBlye9Prxr2rozudQDy0usEwCR0bUNSRCi75BSlVESoQTM3RdSjgk5i2d1QW80Cj7/bEkl9VRt32+Q77qlImqS3Rzm5q5fVoKe8Th9CPzQkmfWQWPlqGIFBaYVb4hF5YMmJ7NluLvnCnsEvamLf1icUodl4xHoiY9SomQt3R8/u7ufpH3lacyilqqryzDkAMIkpiaKmaQA2ORkglUqlUilCCEIYUFrOlWXZvlzZTsV+EmLmfCNYijAAbN++/euvl2/YuGHfvppkMgkAToejtLR00KBBo0aP6t+vH1gLPtsoQ0zClyt7Y/5zo3OEEPj9/mA0qigKAGia5vf7Ou3lZ6taEIR4PL5i5crvvlu9c+ePTU0RwzBEUQz4/T179Rw2dNjIkce4XC6wMCIz24dS02I4uyfbEZfOp9R1wzD4KLOTWxKJhF2mQwgZhp5KqaZpYCyAZb0RBEGWZfvwsVEGAGKalHae84pDCQaDgYDfNEwsCAghWZGh44YCdr/b4/H7/W63O70LulrsgnzjrK2ti8WiGAsZYbKUUoRwOFxvGAY3FJimVSDOxlh25fMvvnz//ff9fj9jRT6EMdY0rby8/De/+Y0kScCqOhHTWjIku6l8Ic8OTOsbk/tSRoaIxzlFASSEVtUnBvod6epS7bi60vbBiG5+vCdqVzbZSxneDQ25Tiz3sD6wDDP+1A8NSQU34y+L6RMRGuBz8Pg7ZPUNrMhkAcHEcm9IFpbsjYkI7KhnUuoU8NaI+l04ObzIlQ9wc0qlUtdOv66+vk4UJbBJr4lk0uPxmBaOCIJw5113i6LIK8dgAUejsRn33z969Kh84MbuARAEobKycs6cZ7/6elksGmMrn21ubNQ//Ogjt9s9cuTIq666cvCgQVzvO+jVCTMkX9PMATH58IHhl2mar7zy79cXvF5VVU0IYXIT59KXS5fOmze/oqJiynnnnn/++YIg5ES9dokx/PUFC5577nm/309ME7gaQUgsFmPbDyHE7XYvXrxk+fIV9lGORWPHHnvs3XffdSCYTwllbDQJoQCmadJOxcmmjVQ29M+5CzJW/O3pp9955502oIoJce2+1Ov1lpSUeL3etuY/pcC9NAAIY1VVS4qLJTHfMyTygjxqA6aEQZbVxmWcQ8TjnydiVK8aK+vix5Z6WOXk1npjV2k/3RtNGMTRAkkpApQ0yTFFrgnl3rQAbDmS2FNLa2JJs8VTCEAjtKtTKneKYKXQMmKIyBshlA4JuSSMPtwdlVuiHgFwCGhZbbyPV/FLHVgVhJDa2tqamhpJkjLis5iJKt0ThOrr6+03CIIQiURUNZXPWzj32Jx78823/vTnPycSCY/HEwwGuZ0FrDFiu+vnX3yxfPny66ZPnzr1Irusl/8bDzWy493effvuuefelStXud0un8/HDHk8qYbdRindu3fvzFmPffb5Fw8+MKO0tJSjXodeCgCxWGzPnj2pVCpjnYtic946xjiZTMZiMf5XNsoNDQ3Q0rT33015+nmjkUhtba2qaaQ9Kc/hdMqSRCnFlBqGgQXBvrjapvYhj7b0LSzZG4nqph1iKM30qFIAh4BX1iV6euRurrZcn1xy3BpRN0dUZ8tmMUJJkxwVcE4o92bUHWDRxRubUusbUw4BEwr2PpiUDg05kU2rzRoAYG4Nk9LDA06N0I/3RJ0C5jzjb19WGzv1MD+xgvvahT2EkCzLiqJkQB53LPD/lSTJzhCMsaIoeRpc0p9pmoIgvPLKv2fOmuXz+dg2SwmJJRK6rjPTBlPr3G43APi8XkLIzFmzksnklVdewU1a/3eJARlCaN++fdOnX7djx47i4iLDMABAVbVEIoExYvY1Qqnb5ZIkSZKk4uLiVatWTb/u+r/99ani4uKO2rkYiYKoKIqiKBmQx4C1eQ5jzAaCERtlpoIdkCgclMeV/U2maei6rut6TimPmzLbgCTGikmTJvXs2VNxKG1IpoylXy9fvnXrVmYPYUsJY8zGvV1qB/J4dA8rnbKyLr6xKeXMwjsOdrxb7H8++ClyUc+gVxJyoh6T8Jhx8Ou6uJj+UzPeaYQe5pJO7JKJd4RSAaGalM4VYYbM/KkuTqmfT0mHp+RSrJFV+x5TalI6NOSqU43V4ST/NA7cm5rUYSG9zCFSoDiP6UMpTSWTiURClmViWT8BAGNBkkS7lMdMfsCLxGCcSCQM0+RuXAptTRGGdytXrfrj448HAgFgWgyl0Xhi5MgR48aNq+jeHSG066efln65dPmKFQ6Hg+kLRUVFT/31r3369Dn++OMOLuoRQrLsVh2WttiH3z/jgR07dgSDQV3XBUGIxeMlxcXnnXfOEYcf7vP7mxqb1q1f9/HHi+vr691ut67rwWCwsrJyxgMPzv7Lnzsn6uq6nkgkHA6HYZpgAxZZlnmDbJhUVeUfJmCcSCTY0Ofw1neWqFU4Q9f0jD+Zhsn/ekBAFiAQCHTp0sXn82VDHuNAQ0NDG2/n0HHqqb8+9dRf5/PGaCy6du1ap9PJNhhmGM2zt21BHoczlqz6Q0Pyi30xBxOFsvAuA/uYehvRyVvVTedVBOyJXHx3a/b/RlJ7k7odSRmuSRid0tUnYmT5JSgAMPmuQTPeqm4yWFxxhhme0rElbqEVEa+Z0dCMeoTS48u8u+J6g2aKuPlbMEImpd/WJ07r5ucqUtsMdTgcf/jDY7qu8ztNk4iiuOSTJS+/PI/bKQzDuO22W3v36mWaBKfrUSPTNHr37g3tucDA2us0TZs9+wm2hbJmNU277db/nTJliv3m86dMee+99x6dOYtvtg6H44knnzzmmBEulytPG+V+JL4C4/F4LBbnKgnGOB5PxONxRVHy8fVz3H/nnXeXLVtWXFycxrtYbPiwYffPuL+8rDm4ZNKkky666KJ77713zZofGOqFQqGlS5d+8MGHZ5xxev72cgBgprozzzxj+PDhoiRCM6DgSKTpgQceTKkqc53HYrHjxo+fNu1S29aCTNNgW9T+3GwsRoUbwnb+EELr6+vhwCjRPAZo+rXXXvPb3+YMJ0AI1dXVXXnV1alUqo3R5FpLu/1kIjlrjZs1mE/5Zym29kImzFewOpxYsjcqCy1c+wycVUInd/etb0xVRlWHTUoilCoY7Uvqr1U1Tu7m98tCRnE6Swqj34eTgs3xz7AmRej4UneRItqRi4FvTUp/q7opqhPZhneUUgGhhEkG+x29vQqxGkdto56V8iFhNKHc83pVIwLEy1hRABmj7TGtSTP9crOnuLUZAACCIBx++OHZf926dQtz8LE7DcMY0L//oEGDco+KKCKEMGp1SbCB/+LLLzdu3BgIBFhEQlNT0++uuWbKlCls6tgteqeffnokEv3j448z5dfpdO7YsWPx4iWTJ59pGkYngkI6TXxyI4SqqqrD4QYeuSaKYkNDw86qqlAoxDC97eFj9+i6/uqrrzqdTgYrqqp27dr1scdm+Xw+XTes7QQIIV3Ky//w2GOXTrssHA5LkmSapsPh+Perr/7616cw5TfPT2BdKi8vLy8vz/hTIpHANqOSaZpen++oo45qox3hZwMf3x4QQls2b5EkibtHBQFv2rQJWbTfBT3WGlPwW7unqKioXTk6n2AXfifGWFM1u07pdDjyF9UzIc9ebJ1hjUHoF/uiLJgDWlruBITiBhkScvb3OYoUsTqhk5ayHqFUEXBNynjlx4aTu/p6emSwitNx4+CepJ4R1YwQMigNyeKwIidteTMC2NSUWrwnqhGagXcYIZ1SvyRMKPdQSxHOg4NptwyhtKdH6eNRLOC28nUQSphkcyQ1sthNAdoYk2ahuKW+wiSRuvp6ezSTYRh79+3r168fF3DWrVs/c9Yst9tNKQVKEcZMC2ttKSKElixekpZGMVZVtaKi4tJLL+FBYXwlMN/F+edPeefdd3burGIyFBM8J08+s7V5RikwVz9YxgF7m/nMrbZZJAjCq6+9RohpDyokhLz26mvDhg7lMnUbq5S5btav37Bt+3an08n4kEwmp0271Ofz6bpuN6cKgqDreiAQuPTSSx59dGYwEDAJcTgclZWVGzduOvLII1rzEvKYFT5S/FsybLUIoXA4bBfwMcYNDQ08CYxdvPuee6qrdzkcjrTWYprJZLJzEh8fDmaxXb169fdr1jBWgOUy/mrZsm3bt/fp3Zvdsx9Rj79927bttbU1oihmYA6lFGPU0NjI5mS7DWbYyjIgzB4OGYvHeYOEUq/Pl3+305CXcawEsiS46rj2+b50yC5tiXcYoRQhXV3SxHKvSWmRIp7YxfveriangDKCexWMEiZ5o6pxWJFzdLGblV8maWMV3RJRDUolQHaU0QkdGnLKGJuEIpQGu5huflUbX9uQFDGSWuIdk8gIhVO6+twiNx3mFePFG6GUjihybY9p1FIU2J9EhLZFtWOKXG2Ljc2Sb9YhG4IgbNy4kU04sIzumzZtmnD88Uz0EwQhkYivW7fO4/HwLVoURbZos98oCEIqldq8ZQvDL4RQMpkaPXoUF3ZoFnNEUTx27LGbNz/H7pEVZdu27ZFIhAVtZryCAkgsG6ClAPhzVgtXQ9inPf/83EWLFrHv5eFpXq/348WL+w/o/5vLL2frpA1Zjw3Zmh/WaJrG9gbDMEKh0NhfjWWQan+QXzl27NhAIGBYjauq+sMPPxxxxOGtyQherzebD3ZW2F1J27Zta2pq4pHMsizv2LGDgS9/pLJy25YtWxgwsWcVRemEPZFDA8OynTt33nvf/dw3zffCVCp11113P/Xkk8yxY5+EnR5KTmzXef755994881WglQQQsD8cnl+YPY6yvhkhFAqlcIYA1CEMFDq9XqhdcWWkHQCEltZIrWhHUc6ANib1L8LJzc3pQhATrzTCfWIwhnd/Ax9CKWD/Y4G1fiyJu4RMWmJegJCgGBlXaIyog4LuQb5HU4x7Qyoimti+iMtOKDULeKBfgUABIwAIKab65tSq8PJiG6yzmQm3gIkTHJyF28Pj2wQiq14wJyrhfugOYspTaur3VxSF6e4J2lYXhEW4ge1qtGom0FZzH9e2lfCt99+t3z5CrfbzUOc3G7322+/c87ZZ5eVlWmahjEWBNHr9fJ7wIqKyjnwlNL6cLixsZEtYzb8/fv15zKmXaLkknK/fv340hIFIRKJ1NbWer3ejI+ilEqiuGfv3kWLFpmEYIwN3SgpKR45cmTnVovdls+w48knn3p+7lyWL2zvLbPLPPnkU4lEYvq114IlI2e/l8+uXbt+4sKgrusVFd1LSoqz1wz/vbS0tLy8fMeOHUzOQghV76rOucDYc4s//risrMwkBCNsmubo0aOY3p0hkrDO/+tfL7PesiuKouzatevf/3512rRLuQ/d7Xb7fD7uTQIAwzA6Knzx95qEiKK4bt26W2+7PRwOs/2Mfw4hxOl0btu27drp0//w2KwePXowG8j+VXIVh8Pj8Xg8ntY0ErulJc9PS6VSTU0RbpegFILBAGMgC37EGHOZJhDwt9YaQkhRWiRgiCxqnPelSTOrE9qWiFoV13RCFQGLzVWbWuCdjNFZ3f0BudkbSygdW+pJmvSb+kQG6lGrOF3UIIv3Rr8JJ/p4lAE+RcAorJoYIdPybWIEKZMO8TvcopAwyL6UXhlRt8W0iG7KGGWDbxrvDDK+zDMk5GJuk4xpkb1UuKbcrEBZDt9+XqU6ocvQHHvMolX2JIyAJORp7LfjXTjc8NDDD2esEEmSwuHwLbfe9uQTs9n2qOt6fX1YVVVCCBN3mYmktbmSiMc1TWMIwu7xej05ly7fNv0BvyA0b/KapkUi0ez7CSEOh2Pz5s2333EnADAz/NixYxnkdQLv7MJIJBJ5+JFHFy5aFAwE2N4rCAJLTZFlma0Zv98/Z86z1dW77rzjdp/P1/oqRQDQ2Nhoz7HzeLxtK4miKLpcLg43CKFIJJqz2wCAMZr9xJNc704kky+98EIoFGLSTTPumKYoin/729PffvcdG02OOB6P529PP92la5eTTjyRm1zr6+uZt5F1wOPx5C/l2Q2FgiCIgvDBBx/OeuwxTdPseJdKpRwOB1iy886dO397ze/uvuuuceOOZR3++WYKTqlUKhqNtWYP7agYy3j71VfL7r7nHiYvA4BhGP/4+9/79esLAKqqJhJxe8ogcwe1pgpUVVUlk0lCKEKAMBYRQialG5tSuxJ6WDXCqpkwCQaQBewQUIY8BQACQilC3QI+q8JfnpF4Tymh9MQuXgTwTX3CKbZI5AIAJu6JAoob5Ntw4vuGZEBCQZHqFAgAi8VBAIoEMd18o6qxNmVEDcIywOzCnR18CaUpQo8r84wucRNKCYXNTUmd0IF+hyNXhmxzlwAMQlucrAZAKe3hkeXaHLkWe1P6ID+LA2pHX7bjXSqVuv2OO6qrq71eL9fUmPjm8Xg2bNhw3fU3PDZrZpcuXXr27PngAzMkWQJKCaGCICxfseKTTz91OZ0550o2uvGzPlrtGKFsh+NzHeMcE5GDMrNJY4wlSWJOsQ5R5uIUxW++/XbWrFnbtm0PBYNs52cg2LVrVwDYvXs3AzhCSDAYXLRoUWVl5e233TpixAiw8uRartI0KmXb1NpZXS29UDjXCc58jnm9Xr5nKIrCg+wy8G7BG288+9xzfIkyuds0CePePffcm4gnJk8+k1L6u2uuiUajgihQwrLuE3PnvmBpau3zkxsHWGrdk0899dprC1wup8PhYHw2DEM3jL59+27evNnlcrGANZfLFYvFbv7fW6ZNu+S3V1/NdhduN4CfB3w9e/QYPnyox+MhJg+oS7v6mH9px44dpIMlUpiJk4c9GoZBabqFRCIRjye4xUMQhFAwmLMRZuW88aab7TKvmDLJe7siW6OqiAAjJCJwMjdFFr5w/bHUIZ7ZzR+yfKnW2KeDeymlJ3TxukW8tCYmYCQiRGweJbCATxKQSQEodQg0w9mDAO1KaBoBCSMFI3vld3tnBIQ0QhGCU7r6WD4vBXj/p8iGpiQCtLYxNaVHQME5pDwAUE3y6b5YVVw7zCWdUO5N3waAEArJol8SmjRTsK0EDBBWTfaBAK2KehkaXDKZvOXW27755hvmVGVgF4lEnE6nJEmGYfh8vs2bN1919W/vufuu0aNHn39+i+ASVVM/+ugjTy4PBhMNZFlmSjFbe42NjZDLosG13XBDmDfFMq59Pn/Or2DrisV2MoOXoeuQN/E+8LzXaCz23HPPvfLKvymlnBsY43A4PHjw4MdmzaSU3nLrbZs2bQ4GA0wkDAQCu3btuu6G3194wflXXnEFU8CzkyWCwaDdZhqJROwWq+yh0TQtGosJQrNg6PcHWvsKtmbSEh/CmqbxQEJk5bGJovjWW2/PnDnL4/Fwz0wsFkMIMQsjE1EfePCh7Tu2Xzd9+sknT7K/xTCMl1+el0gk2oA8/i3UyrcBgK+++mr2E09u3bqV1W5hyJtIJCjA76+//txzz3lmzpznn5/rcDgURTEMg4VhP/vsc6tWffP7G64fNmwYAHCpMB/gowCGYWbkehuGcdVVV1599VWtPRUOhy+48KK2g1SyiWEZxzVq7VKU0kgkwh0+bBoHgsGcnc9wgzAu4WW18cqo6pWwQ8ASRsg6UQxsGx0AsDC3pEkO9zsu6hnMwDvgrk8L1EaXuM/qHnAIOGkSjJD9JNn0PUCZmYwCEIr4PwpIp4ARdgiYZbaSFp0BStOnnSVM4peFKRWBo4JOk1KMUFg1K6OqRxS8Et6d0H9K6AhlVtBjsXhrGpLf1CdSJl0dTn5bn+C3Mb04KAv2Yz2YChwzTLO9mAn2V6a/1NfX3/D73y9btowHkaiapijKTTfeGAgEotGoJImGYbjd7oaGhv93402zn3gyEomwx1VVNUwzlcw9S9hAFhUVFRUVWZntFCG0YeNGZJF9kfCLGzZstEtegUCgtLQkW1pkjwuC4LHI6/U6nc58Zqp9eiGrTswHH3x4+eW/mTv3BVmWmTAiiqKqqtFodMqUKXOe+We3bt26d+/+7Jxnzjv3nEg0qqqqKIosiESR5RdeePHyy3/z/vvvs14hy8PLZnOPHj3s5oI9e/bs2bOH10HJ6BshZPfuPXv37rX7hXr0qMi+mfPB6XQyJrg9bo/Hw/VZtnkIgvDSv/710MOPsAo0ACCKYn19/QUXXHDaaafV1dUxDiCEfD7viy++9NtrfrdmzRrWvqZphmE2NTXRPOYVh3tBEHbs2HH3PffeeNPNVVVVrEpSev9oaDjssMP++uSTU6deJMvyddOn/+GxWX6/n9l8WVPBYHDTpk3Tr7v+kUce3b17N69ukiUd5xCTMcaiKLDKF5xYQFXGnYlEYuvWyupduyilekc2y5bfnR4U65c0KDc0NKiqyiHP4XAE/P6ccj0XA3lXBUEQt0dVh4ByJniwB5jymCDUJwkndnEfEWj1WBy7rEco7etTSp3i5/tim5tSCCGZqZBpxTCdtoubn00fzY2AEpr23qb/1KIzAAAqIQjQ0JBzXKknHQnIQs8JxWn5FDACM8ekTzfVpJsKRiICB0ZNevNhBYzBPknICFjACFSTaoQ6cG57AdgqOImiuHbt2vvun1FVVcXwThTFVColCsIDD8wYM3r0qNGj7rvvvvUbNrIyXqyWzty5c7/6aulVV1510kkn8i2utenAKrIdPnhwZWUlM4S7XK7ly5c3NjayIHi7pYb1KpFILl26lAdzqKo6cOAAJoZkvAhjHI1Gx48bd/fdd5kmwQKmlMr55Uhx/GWWnc8//2Le/PmrV6+WZZktTtafcLihd+9e119/3YTjjwerqpXb7b777rvGjv3VU0/9dduOHT6vV8DYpDQYDO7es+fe++5f8MabU6deNOH4dHUpJt4OHTKE28VYZN+STz65/LLLMoJUAMA0TUmSlixZEo1GWWdYFcKhQ4YgW2W9jJGd+egjPXv2JIQgjIFSVuiJCXeqqj7++J9ee32B3+/j8l19ff155577vzffBADBQOCFF19kcpZpmsFgcP369ddOv+6cs8++7LJpxcXFYAU2t8tS1r2dO3e++trrH7z/fiQaZW5KJvTFYnFBwFMvvPB3v7uGTQBWZGHixIlHHnnkk0899eGHH2GMmXOM7V6vL1jw6WefTT7zzHPOOZsZFtpAXoYs69evf+21110uF6WEZV8SQjRVo5SmUilVVRsaGurD4bq6usbGxsrKyptuvPHSSy/Z7yV5amprdV1n5XCYpdLn9+ey86RBPB6Pc8XFNE2xNZsH0/JMSjVCHQIeUeQcWeTySEKLQiY5JEm2OyCMgFDqk4QzuvkH+R3La+N7kjpGSMIII6DWubXW/ek3st/TlfJs+iOvg6KaBBBUuOQxJe7u7nSUH69vDC33Jp6jlj2HMKSFWQKAUYvbEEIuEWc8gwB0QnVCnUKOSh/NtkWMAeDlefOefvrvTG9leBeLxfx+/8xHHx0+fJiu63379PnnP/7x+J/+9Pbb7yiKwgSfYDBYXb3r9jvueH3BArY5t2vuPfmUk9997z2w0gxra2v/9vTf77zjdgDgYc9sHWKMn5nzTHV1NTOui6JICJk0aVJO6YY9JStKKBTK+aVtUNpuoKpvvPnmRx8tXL9+PcaYe2YBgMVwXHXlFZddNs3r9bJ+IitIhVI6YcKEESNGvPjiS68vWNDY1MT0WcaldevW3377HYcPHnzKKaecc87ZsiwTQvr17z9o0KC1a9e53S7mCn/55XknnHBC927dDMNgPWY7mSRJO6uq5r8yn/kWMcbxeHzIkKP79OnThqUpVFSUzQdRFDdu2jRz5qwffviB6ZVsCoXD4WnTpt18040M3G+44fqBAwc+/qc/1dbW+f0+FihHCJn/yivvvvfevffeM3HCBLNNRODutTVr1rz22uvLvv66oaHB6/UylrIkRU3Tjhkx4ne/u2bo0KFs6Lk+qOt6SUnJAzNmnDxp0j/++QxL0mJ7ZMDvT6VSzz733DvvvnvssWMvuOCC/v368XRjBDbPHqXM6lpXV/fIo49mIwvY4JLJoSwqhXktYL8SpXTv3r12Q2ooGHRaQY4Zc5VJBvfff18oGGIwLQhY7OVRvq1PeKQWgp5JqU4oBfBJwlFBZUjQGVKaj7huluZyEQIAK7yO9aOvV+ntkTdH1DUNyd0J3aBUREjASLAhnr3DTALkKfyEUp2CSamCUW+vMiTo7O1VeGf4W6gtodXGoM6wNZcklzZutjYM7OfadevmzJnz5ZdLvV4v1+AaGhoGDxr00EMP9urVi5lU2NS/9557xowe89Rf/1pVVcUWttvtVlX18MGD076C1mcLU0ZGHnPMiBEjvvnmG4atXq/3zTffdLlcV191JasjwCiVUl948cWXX57HBcBYLHbEEUccN348A8TcH0XSlF4DNs97u5MSY7xixYpVq1Z17dqVS3bRaNThcJx55hmXTbusV6+eAMD4k/E427enT7/2tNNOfeGFFz9evDgWi3k8Hoyx2+0SBGHVt9/6A4HzzjuXC1aXXnLxjTfdjJCbrcxoNHrTTTffe+89Rx5xhL3lH35YO+OBB2KxOFvzCCHdMC65+BImELX2XYau2ysFAEBDQ8Obb7714ksvpVKpYDDIdrVkMkkpve22Wy+68ELONNM0J0066Ygjj5g9e/bixZ9IkuhyuQRBcDgcPp9v4IABYJ1J3y4/I9HoW2+/zQprs/mWSqlMVL/00ktO/fWvweYmss8Tdn3s2LGjRo165513X543b/v27U6nk7liQsFgIpF46623z5o82f5SJjyGgkFdNyRR1A0DAJhdIruHafnF1mGEUDjcoGoqHADavXs3n4qGYZSWlnI7QzZhjMf+6ld+f7PNWhxb4q5TjR0xVbSkJIyQR8Q9PWJfr9Lbo7jEdOSwHV/axW7UXDoxLYgN8jsG+R27E/rWqLozroVVI0loQAQMiNgzLwAAQCdpqQABOATcxSH09Cj9vEqJQwTuDWL8tSlTGAFLkGCtkLSFMUf3CKRT3zALis6X220ZXABg3rz5H320sEePHsyroGlaNBqdPHnyLf97M1MhmVmdbcKEkJNOOvGYkcfMnTv3zTffikajpklGjjzmhhuuT4cvcCHXVnDBxl6KELrpxv93xZVXaZrGMqjcbvdLL720dOmXo0aNquhegRDa9dOuFStWVlZWMuM60zcRwjffdBN7pFUIQ8CFBX5PnoqtJEkPPfhgVVX13r17RVGMxmIet/vXp5wydepFgwcPBsv9ijGurq7m6QoMsLp168aY07Nnz/vuu/f8C86fP2/+p599FolGvR6PqqoD+vd/+KEH2c7BoP/4448/7bTT3n333ZKSEharUb1r17XXTh81atThgwd7vd5INLJ+/YYVK1aYpul0OExCZFmuqak5++yzx48fx9tp7YvYXxkyYoy3bN3657/8paioyON2M2hoaGjs0aPi7rvuHDFihL0qF+N21y5dZs2c+cknn8yZ8+zGTZsVRQaAGTPuZ+okZ6+Nty0GmjUy7thjb775ptlPPBkKBuPxuGGY/fv3u+D880899dcskon1sLGxsb6+HgtCuq6caZaWljKpVhTFc845++STJ739zjsLFizYseNHSZLcbnc8Hr/vvnuPOuooHjXJh+P886d88umn9eFwhokgx4KyxfoihFwuV/fu3boddlg+c6ZDhBDat6+G2RMZ6w7rdhgXSHMuzFg8ziZ/2tjqFPG5FYG1Dck9SV3AqEgWSh1SiUNkSAdcsmPPd+QD2DiyKF8OUl1dUleXRCgNq+belL42HI8bpoQRfwUBEBB0cYpeUQjKQqlDLHWKQbk5MoBa9ZDtfWGvCMqCTxLqVENAIGNUqjQX4ORdYgNX5pA0khBMmiK01CEhyzTKFAmDZB5JTgEwAqEVAOX9uO/eexobG1etWhUMBsMNDcVFRbfdeusZZ5wO1rZpNxIz/73f5/t/v//9mWecOW/+/JUrV959152EEE3XFYSoZcEllsvVPpBsBfbv33/GjPvvvPMu0zRdTqdhmj6fb/fuPfPmv8L7ymQK1gFVVVVVnXH//UcffZTd5Le/iHfM4/Hcdded11zzO7/ff9ppp5591ln9+/cHy0XIpA/DMG66+X937drFrJmapnUpL58372WmFrFVNGjgwAcemLFly9a33n7r008/q6mpuevOO1nEDzfJE0LuuP22mpqaFStWFBUVEUIcikII+eyzz5YsWcI6JgiC2+0WRREQEkWxpqbm2LFjb7v1lg6dZ8Sqio4ZPfrhhx564MEHA4GArmmpVOr000+76cb/xz0JyKZ5pEtXETJx4sRf/epXH3740fNz555x+ulDhwxhXhqaTVm1hRlLp1166cqVq5YvXz569Ogzzjj9hIkTWRSRPXzngw8+fOwPf2A9EQShsbHpkYcfOuWUkzmj3G731IsumnzmmYsWffze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" alt="청아소아청소년과">
   <div class="divider"></div>
   <div class="title">알레르기 항원 보고서 생성기</div>
-  <div class="sub">MAST 120 · 176종</div>
+  <div class="sub">MAST 120 · 특이 IgE</div>
 </header>
 
 <div class="app-body">
@@ -344,6 +385,7 @@ textarea:focus{border-color:var(--accent);background:#fff;}
   <div class="input-panel">
     <div class="panel-title">클라우드 · 환자 기록 공유</div>
     <div id="cloudBox" class="cloud-box"></div>
+    <button id="itListBtn" class="btn-sm ghost" style="display:none;" onclick="showITList()">💊 면역치료 환자 목록</button>
 
     <details id="localKeyBox" class="local-key">
       <summary>로컬 API 키 (클라우드 미사용 시)</summary>
@@ -367,6 +409,7 @@ textarea:focus{border-color:var(--accent);background:#fff;}
       <input type="text" id="pid" placeholder="예) 12345">
       <div id="histBox" class="hist-box"></div>
     </div>
+    <div id="itBox" class="it-box"></div>
     <div class="form-group">
       <label>이름 <span class="lbl-note">— 인쇄용, 클라우드에 저장 안 됨</span></label>
       <input type="text" id="pname" placeholder="홍길동">
@@ -383,13 +426,13 @@ textarea:focus{border-color:var(--accent);background:#fff;}
       <label>검사 패널</label>
       <select id="panel">
         <option value="MAST120">MAST 120종</option>
-        <option value="MAST176">MAST 176종</option>
+        <option value="sIgE">특이 IgE (수치 직접 입력)</option>
         <option value="기타">기타</option>
       </select>
     </div>
 
-    <div class="panel-title" style="margin-top:4px;">검사 결과 붙여넣기</div>
-    <div class="hint">
+    <div class="panel-title" id="inputTitle" style="margin-top:4px;">검사 결과 붙여넣기</div>
+    <div class="hint" id="inputHint">
       검사실 보고 형식 그대로:<br>
       <code>- Class 1 : 느릅나무, 미루나무</code><br>
       <code>- Class 2 : 개암나무, 참나무, ...</code>
@@ -425,8 +468,8 @@ const ALLERGY_DB = [{"항목명": "집먼지진드기(Dp)", "분류": "진드기
 //  클라우드 설정 (SETUP.md 참고) — 비워두면 클라우드 기능 꺼짐(로컬 키로만 동작)
 //  anon key 는 공개돼도 되는 키. 실제 보호는 Supabase 로그인 + RLS(staff 목록)가 담당
 // ════════════════════════════════════════
-const SUPABASE_URL      = "https://ignbyjkoqijirnycmcyt.supabase.co";   // 예) https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbmJ5amtvcWlqaXJueWNtY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MzA2NTUsImV4cCI6MjEwNjQwNjY1NX0.3VGnkDTJXUb3rZwcp0p95oRZj1d3UNQfF7ShcPZCoHQ";   // Project Settings → API → anon public
+const SUPABASE_URL      = "https://ignbyjkoqijirnycmcyt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbmJ5amtvcWlqaXJueWNtY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MzA2NTUsImV4cCI6MjEwNjQwNjY1NX0.3VGnkDTJXUb3rZwcp0p95oRZj1d3UNQfF7ShcPZCoHQ";
 const AI_MODEL = "claude-haiku-4-5-20251001";
 
 const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
@@ -454,70 +497,203 @@ function fmtDate(iso) {
   const [y, m, d] = iso.split("-").map(Number);
   return `${y}년 ${m}월 ${d}일`;
 }
+function addMonths(iso, n) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1 + n, d));
+  return dt.toISOString().slice(0, 10);
+}
+const monthsSince = (a, b) => Math.max(0, Math.floor((new Date(b) - new Date(a)) / 86400000 / 30.44));
 const igeNum = v => { const n = parseFloat(String(v ?? "").replace(/[^\d.]/g, "")); return isNaN(n) ? null : n; };
 
-// ── 항원 매칭: 항목명/별칭 정확 일치만 (부분 일치는 '말벌독→말' 같은 오매칭을 일으켜 폐기) ──
-const norm = s => String(s).toLowerCase().replace(/\s+/g, "");
-const dbMap = {};
+// ════════════════════════════════════════
+//  검사 패널
+// ════════════════════════════════════════
+const PANELS = {
+  MAST120: { label: "MAST 120종", numeric: false },
+  sIgE:    { label: "특이 IgE", numeric: true },
+  기타:    { label: "기타", numeric: false },
+};
+const panelLabel = p => (PANELS[p] && PANELS[p].label) || p;
+const HINTS = {
+  MAST: `검사실 보고 형식 그대로:<br>
+      <code>- Class 1 : 느릅나무, 미루나무</code><br>
+      <code>- Class 2 : 개암나무, 참나무, ...</code>`,
+  sIgE: `항목 + 수치 (쉼표·줄바꿈 구분, 오타 자동 보정):<br>
+      <code>dp 45.2, df 38.1, dpg 12.3, dfg 10.5</code><br>
+      <code>흰자 3.2, 노른자 0.4, alb 1.1, muc &lt;0.35</code><br>
+      <code>고양이 2.1, 개 0.5</code><br>
+      dpg/dfg = Dp/Df IgG · alb = 오브알부민 · muc = 오보뮤코이드`,
+};
+const PLACEHOLDER = {
+  MAST: "- Class 1 : 느릅나무, 미루나무, 소나무\n- Class 2 : 개암나무, 참나무\n- Class 3 : 오리나무\n...",
+  sIgE: "dp 45.2, df 38.1, dpg 12.3, dfg 10.5\n흰자 3.2, 노른자 0.4, alb 1.1, muc <0.35",
+};
+function onPanelChange() {
+  const numeric = PANELS[$("panel").value].numeric;
+  $("inputTitle").textContent = numeric ? "검사 수치 입력" : "검사 결과 붙여넣기";
+  $("inputHint").innerHTML = numeric ? HINTS.sIgE : HINTS.MAST;
+  $("rawInput").placeholder = numeric ? PLACEHOLDER.sIgE : PLACEHOLDER.MAST;
+  try { localStorage.setItem("chungah_panel", $("panel").value); } catch (_) {}
+}
+
+// ════════════════════════════════════════
+//  항원 이름 매칭 — 항목명/별칭 정확 일치 → 안 되면 오타 보정(편집거리, 후보가 하나일 때만)
+// ════════════════════════════════════════
+const norm  = s => String(s).toLowerCase().replace(/\s+/g, "");
+const loose = s => norm(s).replace(/[()（）.\-_·]/g, "");
+
+// 면역치료 모니터링용 IgG — 알레르기 DB 항원이 아니라 별도 지표
+const MARKERS = {
+  "Dp IgG": ["dpg", "dpigg", "dpgg", "dpg4", "dpigg4", "dpig"],
+  "Df IgG": ["dfg", "dfigg", "dfgg", "dfg4", "dfigg4", "dfig"],
+};
+// 직접 타자 입력용 추가 별칭
+const EXTRA_ALIAS = {
+  "집먼지진드기(Dp)": ["dpige", "dpe"],
+  "집먼지진드기(Df)": ["dfige", "dfe"],
+  "계란흰자": ["흰자", "ew", "white"],
+  "계란노른자": ["노른자", "ey", "yolk"],
+  "난백알부민": ["alb", "abl", "ova", "ovalb", "ovalbu", "ovalbum", "ovalbumin", "알부민", "오브알부민", "오발부민"],
+  "난백점소": ["muc", "mcu", "ovomu", "ovomuc", "mucoid", "ovomucoid", "뮤코이드", "오보뮤코이드", "ovm", "omuc"],
+};
+const KEYMAP = {};
+function addKey(k, entry) {
+  const key = loose(k);
+  if (!key) return;
+  if (KEYMAP[key] && KEYMAP[key].id !== entry.id) console.warn("별칭 충돌", key, KEYMAP[key].id, entry.id);
+  KEYMAP[key] = entry;
+}
 ALLERGY_DB.forEach(item => {
-  [item["항목명"], ...(item["별칭"] || [])].forEach(k => { dbMap[norm(k)] = item; });
+  const e = { type: "db", item, id: item["항목명"] };
+  [item["항목명"], ...(item["별칭"] || [])].forEach(k => addKey(k, e));
 });
+Object.entries(EXTRA_ALIAS).forEach(([name, ks]) => {
+  const item = ALLERGY_DB.find(x => x["항목명"] === name);
+  if (item) ks.forEach(k => addKey(k, { type: "db", item, id: name }));
+});
+Object.entries(MARKERS).forEach(([name, ks]) => [name, ...ks].forEach(k => addKey(k, { type: "marker", id: name })));
+
+// 최적 문자열 정렬 거리 (인접 글자 뒤바뀜 = 1)
+function osa(a, b) {
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 2) return 9;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 1; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) {
+    const c = a[i - 1] === b[j - 1] ? 0 : 1;
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+    if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+  }
+  return d[m][n];
+}
+function fuzzyKey(k) {
+  if (k.length < 3) return null;                  // dp/df 같은 2글자는 보정하지 않음 (서로 1글자 차이)
+  const maxD = k.length >= 6 ? 2 : 1;
+  let best = null, bestD = 9, tie = false;
+  for (const key of Object.keys(KEYMAP)) {
+    if (key.length < 3) continue;
+    const d = osa(k, key);
+    if (d < bestD) { best = key; bestD = d; tie = false; }
+    else if (best && d === bestD && KEYMAP[key].id !== KEYMAP[best].id) tie = true;
+  }
+  return best && bestD <= maxD && !tie ? best : null;
+}
+function resolveName(name) {
+  const k = loose(name);
+  if (!k) return null;
+  if (KEYMAP[k]) return { ...KEYMAP[k], fuzzy: false };
+  const f = fuzzyKey(k);
+  return f ? { ...KEYMAP[f], fuzzy: true } : null;
+}
 function findAllergen(name) {
-  return dbMap[norm(name)] || null;
+  const r = resolveName(name);
+  return r && r.type === "db" ? r.item : null;
 }
 const FOOD_COMPONENT = /^(계란|우유|밀가루|메밀|땅콩|콩|사과|복숭아|헤이즐넛|호두|새우|대구|돼지고기|소고기) 성분/;
 const isFood = d => d && (d["분류"] === "식품" || FOOD_COMPONENT.test(d["항목명"]));
 
-function parseInput(raw) {
-  const result = {};
+const CLASS_LV = {0:"음성",1:"낮음",2:"경도",3:"중등도",4:"중등-중증",5:"중증",6:"최중증"};
+const CLASS_COLOR = {0:"c0",1:"c1",2:"c2",3:"c3",4:"c4",5:"c5",6:"c6"};
+const SIGE_CUTS = [0.35, 0.7, 3.5, 17.5, 50, 100];   // kU/L → Class 1..6
+function sigeClass(v, op) {
+  const x = op === "<" ? v - 1e-9 : v;
+  return SIGE_CUTS.filter(t => x >= t).length;
+}
+
+// ── 입력 파싱 → entries [{name, canon, kind:'IgE'|'IgG', cls, value, op, item, fuzzy}] ──
+function parseMast(raw) {
+  const out = [];
   raw.split("\n").forEach(line => {
     const m = line.match(/class\s*(\d+)\s*[:\-]\s*(.+)/i);
     if (!m) return;
     const cls = parseInt(m[1]);
-    const names = m[2].split(/[,，、]/).map(n=>n.trim()).filter(Boolean);
-    if (!result[cls]) result[cls] = [];
-    result[cls].push(...names);
+    m[2].split(/[,，、]/).map(n => n.trim()).filter(Boolean).forEach(name => out.push({ name, cls, value: null, op: "" }));
   });
-  return result;
+  return { list: out, bad: [] };
 }
-
-const CLASS_LV = {1:"낮음",2:"경도",3:"중등도",4:"중등-중증",5:"중증",6:"최중증"};
-const CLASS_COLOR = {0:"c0",1:"c1",2:"c2",3:"c3",4:"c4",5:"c5",6:"c6"};
-
-// parsed → 저장용 결과 배열 [{name, canon, cls}] (canon = DB 항목명, 미등록이면 null)
-function toResults(parsed) {
-  const out = [];
-  Object.keys(parsed).map(Number).sort((a,b)=>b-a).forEach(cls => {
-    parsed[cls].forEach(name => {
-      const d = findAllergen(name);
-      out.push({ name, canon: d ? d["항목명"] : null, cls });
-    });
+function parseNumeric(raw) {
+  const out = [], bad = [];
+  raw.split(/[\n,;，、]+/).forEach(chunk => {
+    const c = chunk
+      .replace(/\(?\s*class\s*\d\s*\)?/gi, " ")
+      .replace(/k?ua?\s*\/\s*l|iu\s*\/\s*ml|mg\s*\/\s*l|[uμ]g\s*\/\s*ml/gi, " ");
+    const re = /([a-z가-힣][a-z가-힣().\-\s]*?)\s*[:=]?\s*(<=?|>=?)?\s*(\d+(?:\.\d+)?)/gi;
+    let m, any = false;
+    while ((m = re.exec(c))) {
+      any = true;
+      out.push({ name: m[1].trim(), op: (m[2] || "").replace("=", ""), value: parseFloat(m[3]) });
+    }
+    if (!any && c.trim()) bad.push(chunk.trim());
   });
-  return out;
+  return { list: out, bad };
 }
+function buildEntries(panel, raw) {
+  const numeric = PANELS[panel].numeric;
+  const { list, bad } = numeric ? parseNumeric(raw) : parseMast(raw);
+  const entries = list.map(x => {
+    const r = resolveName(x.name);
+    if (r && r.type === "marker")
+      return { name: x.name, canon: r.id, kind: "IgG", cls: null, value: x.value, op: x.op, item: null, fuzzy: r.fuzzy };
+    const item = r ? r.item : null;
+    return { name: x.name, canon: item ? item["항목명"] : null, kind: "IgE",
+             cls: numeric ? sigeClass(x.value, x.op) : x.cls, value: x.value, op: x.op,
+             item, fuzzy: !!(r && r.fuzzy) };
+  });
+  return { entries, bad };
+}
+const valStr = e => e.value == null ? "" : `${e.op || ""}${e.value}`;
 
 // ════════════════════════════════════════
 //  이전 검사와 비교 (코드로 계산 — AI 는 이 결과를 해석만 함)
 // ════════════════════════════════════════
 const KIND = {
-  new:  { label: "신규 양성", color: "#c0392b" },
-  up:   { label: "상승",     color: "#e67e22" },
-  down: { label: "하강",     color: "#27ae60" },
-  gone: { label: "음성 전환", color: "#2d7a4f" },
-  same: { label: "유지",     color: "#888" },
+  new:   { label: "신규 양성", color: "#c0392b" },
+  up:    { label: "상승",     color: "#e67e22" },
+  down:  { label: "하강",     color: "#27ae60" },
+  gone:  { label: "음성 전환", color: "#2d7a4f" },
+  first: { label: "첫 측정",   color: "#2d5a8e" },
+  same:  { label: "유지",     color: "#888" },
 };
-const KIND_ORDER = { new: 0, up: 1, down: 2, gone: 3, same: 4 };
+const KIND_ORDER = { new: 0, up: 1, down: 2, gone: 3, first: 4, same: 5 };
+const isIgE = r => (r.kind || "IgE") === "IgE";
 
 function compareTests(prev, cur) {
   const key = r => r.canon || r.name;
-  const pm = new Map(prev.results.map(r => [key(r), r.cls]));
-  const cm = new Map(cur.results.map(r => [key(r), r.cls]));
+  const pm = new Map(prev.results.filter(isIgE).map(r => [key(r), r]));
+  const cm = new Map(cur.results.filter(isIgE).map(r => [key(r), r]));
+  const prevNum = PANELS[prev.panel] && PANELS[prev.panel].numeric;
+  const curNum = PANELS[cur.panel] && PANELS[cur.panel].numeric;
   const rows = [];
-  cm.forEach((c, k) => {
-    const p = pm.get(k);
-    rows.push({ name: k, prev: p ?? 0, cur: c, kind: p == null ? "new" : c > p ? "up" : c < p ? "down" : "same" });
+  new Set([...pm.keys(), ...cm.keys()]).forEach(k => {
+    const p = pm.get(k), c = cm.get(k);
+    if (!c && curNum) return;                         // 이번에 측정 안 한 항목 (개별 검사는 일부만 측정)
+    const pc = p ? p.cls : 0, cc = c ? c.cls : 0;
+    if (!pc && !cc && !(p && c && p.value != null)) return;
+    let kind;
+    if (!p && prevNum) kind = "first";                // 이전엔 측정 안 함
+    else kind = !pc && cc ? "new" : pc && !cc ? "gone" : cc > pc ? "up" : cc < pc ? "down" : "same";
+    rows.push({ name: k, prev: pc, cur: cc, prevV: p ? valStr(p) : "", curV: c ? valStr(c) : "", kind });
   });
-  pm.forEach((p, k) => { if (!cm.has(k)) rows.push({ name: k, prev: p, cur: 0, kind: "gone" }); });
   rows.sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || b.cur - a.cur || b.prev - a.prev);
   const months = (new Date(cur.test_date) - new Date(prev.test_date)) / 86400000 / 30.44;
   return { rows, prev, cur, months, samePanel: prev.panel === cur.panel,
@@ -532,7 +708,7 @@ function kindLabel(kind, samePanel) {
 
 function renderCompare(cmp, history) {
   const { rows, prev, cur, months, samePanel, igeP, igeC } = cmp;
-  const badge = c => `<span class="cb ${CLASS_COLOR[c]}">${c ? "Class " + c : "음성"}</span>`;
+  const badge = (c, v) => `<span class="cb ${CLASS_COLOR[c] || "c6"}">${c ? "Class " + c : "음성"}</span>${v ? ` <span class="val">${esc(v)}</span>` : ""}`;
   let ige = "";
   if (igeP != null && igeC != null) {
     const pct = igeP > 0 ? Math.round((igeC - igeP) / igeP * 100) : null;
@@ -541,23 +717,24 @@ function renderCompare(cmp, history) {
     ige = `<div class="cmp-ige">Total IgE <b>${esc(prev.total_ige)}</b> → <b>${esc(cur.total_ige)}</b> IU/mL
            <span class="${dir}">${arrow} ${pct != null && pct !== 0 ? Math.abs(pct) + "%" : ""}</span></div>`;
   }
-  const chips = ["new", "up", "down", "gone", "same"].map(k => {
+  const chips = Object.keys(KIND).map(k => {
     const n = rows.filter(r => r.kind === k).length;
     return n ? `<span class="cmp-chip" style="color:${KIND[k].color}">${kindLabel(k, samePanel)} ${n}</span>` : "";
   }).join("");
-  const changed = rows.filter(r => r.kind !== "same");
-  const table = changed.length
-    ? `<table class="cmp-table"><thead><tr><th>항원</th><th style="width:80px;">이전</th><th style="width:80px;">이번</th><th style="width:90px;">변화</th></tr></thead><tbody>
-       ${changed.map(r => `<tr><td>${esc(r.name)}</td><td>${badge(r.prev)}</td><td>${badge(r.cur)}</td>
+  // 수치가 있는 검사는 같은 Class 안의 수치 변화도 보여줌
+  const show = rows.filter(r => r.kind !== "same" || (r.prevV && r.curV && r.prevV !== r.curV));
+  const table = show.length
+    ? `<table class="cmp-table"><thead><tr><th>항원</th><th style="width:110px;">이전</th><th style="width:110px;">이번</th><th style="width:90px;">변화</th></tr></thead><tbody>
+       ${show.map(r => `<tr><td>${esc(r.name)}</td><td>${r.kind === "first" ? "—" : badge(r.prev, r.prevV)}</td><td>${badge(r.cur, r.curV)}</td>
          <td style="color:${KIND[r.kind].color};font-weight:600;">${kindLabel(r.kind, samePanel)}</td></tr>`).join("")}
        </tbody></table>`
     : `<div style="color:#888;">항원별 Class 변화가 없습니다.</div>`;
-  const same = rows.filter(r => r.kind === "same");
+  const same = rows.filter(r => r.kind === "same" && !show.includes(r));
   const sameLine = same.length
     ? `<div class="cmp-same">변화 없음: ${same.map(r => `${esc(r.name)}(${r.cur})`).join(", ")}</div>` : "";
   const panelNote = samePanel ? "" :
-    `<div class="cmp-note">* 이전(${esc(prev.panel)})과 이번(${esc(cur.panel)}) 검사 패널이 달라, 일부 변화는 검사 항목 차이 때문일 수 있습니다.</div>`;
-  const past = history.filter(t => t.test_date <= cur.test_date && t.id !== cur.id);
+    `<div class="cmp-note">* 이전(${esc(panelLabel(prev.panel))})과 이번(${esc(panelLabel(cur.panel))}) 검사 종류가 달라, 일부 변화는 검사 항목·방법 차이 때문일 수 있습니다.</div>`;
+  const past = history.filter(t => t.test_date < cur.test_date);
   const histLine = past.length > 1
     ? `<div class="cmp-hist">검사 이력: ${[...past].reverse().map(t => `${esc(t.test_date)}${t.total_ige ? ` (IgE ${esc(t.total_ige)})` : ""}`).join(" → ")} → <b>${esc(cur.test_date)}</b></div>` : "";
   return `
@@ -570,14 +747,260 @@ function renderCompare(cmp, history) {
 
 function compareText(cmp) {
   const { rows, prev, cur, months, samePanel, igeP, igeC } = cmp;
-  const L = [`이전 검사 ${prev.test_date}(${prev.panel}) → 이번 검사 ${cur.test_date}(${cur.panel}), 간격 약 ${Math.round(months)}개월`];
+  const L = [`이전 검사 ${prev.test_date}(${panelLabel(prev.panel)}) → 이번 검사 ${cur.test_date}(${panelLabel(cur.panel)}), 간격 약 ${Math.round(months)}개월`];
   if (igeP != null && igeC != null) L.push(`Total IgE: ${prev.total_ige} → ${cur.total_ige} IU/mL`);
-  ["new", "up", "down", "gone", "same"].forEach(k => {
+  Object.keys(KIND).forEach(k => {
     const rs = rows.filter(r => r.kind === k);
-    if (rs.length) L.push(`${KIND[k].label}: ` + rs.map(r => `${r.name} Class ${r.prev}→${r.cur}`).join(", "));
+    if (rs.length) L.push(`${KIND[k].label}: ` + rs.map(r =>
+      `${r.name} Class ${r.prev}→${r.cur}${r.prevV || r.curV ? ` (${r.prevV || "-"}→${r.curV || "-"} kU/L)` : ""}`).join(", "));
   });
-  if (!samePanel) L.push("※ 두 검사의 패널이 달라 신규 양성/음성 전환 일부는 검사 항목 차이 때문일 수 있음");
+  if (!samePanel) L.push("※ 두 검사의 종류가 달라 신규 양성/음성 전환 일부는 검사 항목·방법 차이 때문일 수 있음");
   return L.join("\n");
+}
+
+// ════════════════════════════════════════
+//  면역치료 (설하면역치료) 기록·경과
+// ════════════════════════════════════════
+const IT_DRUGS = ["스타로랄", "액트에어", "라이스정"];
+const IT_END_REASONS = ["효과 부족 → 변경", "부작용", "복용 불편·순응도", "치료 완료", "기타"];
+const TREND = [["집먼지진드기(Dp)", "Dp IgE"], ["집먼지진드기(Df)", "Df IgE"], ["Dp IgG", "Dp IgG"], ["Df IgG", "Df IgG"]];
+let itCache = [];
+
+async function fetchCourses(pid) {
+  const { data, error } = await sb.from("immunotherapy_courses").select("*")
+    .eq("chart_no", pid).order("start_date", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+function courseAt(date, courses) {
+  return courses.find(c => c.start_date <= date && (!c.end_date || date <= c.end_date)) || null;
+}
+function itLabelAt(date, courses) {
+  if (!courses.length) return "";
+  const c = courseAt(date, courses);
+  if (c) return `${c.drug} ${monthsSince(c.start_date, date) + 1}개월째`;
+  const first = courses.reduce((m, x) => x.start_date < m ? x.start_date : m, "9999");
+  return date < first ? "치료 전" : "치료 안 함";
+}
+// 진드기 4항목(Dp/Df IgE·IgG)이 있는 검사만 날짜순으로
+function trendRows(tests) {
+  return tests.map(t => {
+    const v = {};
+    (t.results || []).forEach(r => { const k = r.canon || r.name; if (TREND.some(([c]) => c === k)) v[k] = r; });
+    return { t, v };
+  }).filter(x => Object.keys(x.v).length)
+    .sort((a, b) => a.t.test_date.localeCompare(b.t.test_date));
+}
+function fmtVal(r) {
+  if (!r) return "—";
+  if (r.value != null) return `${r.op || ""}${r.value}`;
+  return r.cls ? `Class ${r.cls}` : "음성";
+}
+
+const SER_COLOR = ["#2d5a8e", "#e67e22"];
+function trendChart(title, ser, rows, courses) {
+  const pts = ser.map(([c, l]) => ({ l, p: rows.filter(x => x.v[c] && x.v[c].value != null)
+    .map(x => ({ d: +new Date(x.t.test_date), y: x.v[c].value, date: x.t.test_date })) }));
+  if (!pts.some(s => s.p.length >= 2)) return "";
+  const all = pts.flatMap(s => s.p);
+  const W = 330, H = 150, L = 34, R = 10, T = 18, B = 24;
+  const x0 = Math.min(...all.map(p => p.d)); let x1 = Math.max(...all.map(p => p.d)); if (x1 === x0) x1 = x0 + 1;
+  const ymax = Math.max(...all.map(p => p.y)) * 1.15 || 1;
+  const X = d => L + (d - x0) / (x1 - x0) * (W - L - R), Y = y => H - B - (y / ymax) * (H - B - T);
+  const grid = [0, 0.5, 1].map(f => `<line x1="${L}" x2="${W - R}" y1="${Y(ymax * f)}" y2="${Y(ymax * f)}" stroke="#eee"/>
+    <text x="${L - 4}" y="${Y(ymax * f) + 3}" text-anchor="end" font-size="8" fill="#999">${+(ymax * f).toFixed(1)}</text>`).join("");
+  const marks = courses.filter(c => { const d = +new Date(c.start_date); return d >= x0 && d <= x1; }).map(c => {
+    const x = X(+new Date(c.start_date));
+    return `<line x1="${x}" x2="${x}" y1="${T}" y2="${H - B}" stroke="#5b4a8e" stroke-dasharray="3,3"/>
+      <text x="${x + 2}" y="${T - 4}" font-size="8" fill="#5b4a8e">${esc(c.drug)} 시작</text>`;
+  }).join("");
+  const lines = pts.map((s, i) => s.p.length ? `<polyline fill="none" stroke="${SER_COLOR[i]}" stroke-width="2"
+      points="${s.p.map(p => `${X(p.d)},${Y(p.y)}`).join(" ")}"/>` + s.p.map(p =>
+      `<circle cx="${X(p.d)}" cy="${Y(p.y)}" r="2.5" fill="${SER_COLOR[i]}"/>
+       <text x="${X(p.d)}" y="${Y(p.y) - 5}" text-anchor="middle" font-size="8" fill="${SER_COLOR[i]}">${p.y}</text>`).join("") : "").join("");
+  const xl = [...new Set(all.map(p => p.date))].map(dt =>
+    `<text x="${X(+new Date(dt))}" y="${H - B + 12}" text-anchor="middle" font-size="7.5" fill="#888">${dt.slice(2, 7)}</text>`).join("");
+  const legend = pts.map((s, i) => `<span style="color:${SER_COLOR[i]}">● ${s.l}</span>`).join(" ");
+  return `<div class="it-chart"><div class="t">${title} ${legend}</div><svg viewBox="0 0 ${W} ${H}" width="100%">${grid}${marks}${lines}${xl}</svg></div>`;
+}
+
+function renderITSection(courses, rows) {
+  const now = courses.find(c => !c.end_date);
+  const asc = [...courses].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const courseLine = asc.length
+    ? asc.map(c => `<span class="it-chip ${c.end_date ? "" : "on"}">${esc(c.drug)} ${esc(c.start_date)} ~ ${c.end_date ? esc(c.end_date) : "진행 중"}${c.end_reason ? ` · ${esc(c.end_reason)}` : ""}</span>`).join(" → ")
+    : `<span style="color:#888;">면역치료 기록 없음</span>`;
+  const table = rows.length ? `<table class="cmp-table"><thead><tr><th>검사일</th><th>치료</th>${TREND.map(([, l]) => `<th>${l}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(({ t, v }) => `<tr${t.__cur ? ' class="cur-row"' : ""}><td>${esc(t.test_date)}</td><td>${esc(itLabelAt(t.test_date, courses) || "—")}</td>
+      ${TREND.map(([c]) => `<td>${esc(fmtVal(v[c]))}</td>`).join("")}</tr>`).join("")}</tbody></table>` : "";
+  const charts = [["특이 IgE (kU/L)", TREND.slice(0, 2)], ["IgG", TREND.slice(2)]]
+    .map(([title, ser]) => trendChart(title, ser, rows, courses)).join("");
+  return `<div class="it-section"><div class="it-head">면역치료 경과 모니터링
+      <span class="sub">${now ? `현재 ${esc(now.drug)} · ${monthsSince(now.start_date, todayISO()) + 1}개월째` : ""}</span></div>
+    <div class="cmp-body"><div class="it-courses">${courseLine}</div>${table}
+      ${charts ? `<div class="it-charts">${charts}</div>` : ""}
+      <div class="cmp-note" style="color:#666;">※ 수치는 치료 반응을 보조적으로 확인하는 지표이며, 효과 판단은 증상 호전이 가장 중요합니다.</div></div></div>`;
+}
+
+function itText(courses, rows) {
+  const L = [];
+  const asc = [...courses].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  if (asc.length) asc.forEach(c => L.push(`- ${c.drug}: ${c.start_date} ~ ${c.end_date || "현재 진행 중"} (약 ${monthsSince(c.start_date, c.end_date || todayISO())}개월)${c.end_reason ? `, 종료 사유: ${c.end_reason}` : ""}${c.note ? `, 메모: ${c.note}` : ""}`));
+  else L.push("- 면역치료 기록 없음");
+  if (rows.length) {
+    L.push("[진드기 수치 추이 (IgE 단위 kU/L)]");
+    rows.forEach(({ t, v }) => L.push(`- ${t.test_date} (${itLabelAt(t.test_date, courses) || "치료 정보 없음"}): ` +
+      TREND.map(([c, l]) => `${l} ${fmtVal(v[c])}`).join(", ")));
+  }
+  return L.join("\n");
+}
+
+// ── 왼쪽 패널: 면역치료 기록 입력 ──
+function renderITBox(mode, id) {
+  const box = $("itBox"), pid = $("pid").value.trim();
+  if (!cloudReady() || !pid) { box.innerHTML = ""; box.style.display = "none"; return; }
+  box.style.display = "flex";
+  const cur = itCache.find(c => !c.end_date);
+  const list = itCache.map(c => `<div class="it-item ${c.end_date ? "ended" : "ongoing"}">
+      <div><b>${esc(c.drug)}</b> ${esc(c.start_date)} ~ ${c.end_date ? esc(c.end_date) : '<span class="on">진행 중</span>'}
+        <span class="m">(${monthsSince(c.start_date, c.end_date || todayISO())}개월)</span></div>
+      ${c.end_reason ? `<div class="m">종료: ${esc(c.end_reason)}</div>` : ""}
+      ${c.note ? `<div class="m">메모: ${esc(c.note)}</div>` : ""}
+      <div class="acts">${c.end_date ? "" : `<button onclick="renderITBox('end','${c.id}')">종료</button>`}
+        <button class="x" onclick="deleteCourse('${c.id}')">삭제</button></div></div>`).join("");
+  let form = "";
+  if (mode === "start") form = `<div class="it-form">
+      <label>${cur ? "새 약" : "약"}</label>
+      <select id="itDrug">${IT_DRUGS.map(d => `<option>${d}</option>`).join("")}<option value="기타">기타(직접 입력)</option></select>
+      <input id="itDrugOther" placeholder="약 이름" style="display:none">
+      <label>시작일</label><input type="date" id="itStart" value="${todayISO()}">
+      ${cur ? `<label>기존 ${esc(cur.drug)} 종료 사유</label>
+        <select id="itPrevReason">${IT_END_REASONS.map(r => `<option>${r}</option>`).join("")}</select>` : ""}
+      <input id="itNote" placeholder="메모 (변경 이유, 용량 등 — 선택)">
+      <div class="row"><button class="btn-sm" onclick="saveCourse()">저장</button>
+        <button class="btn-sm ghost" onclick="renderITBox()">취소</button></div></div>`;
+  if (mode === "end") form = `<div class="it-form">
+      <label>종료일</label><input type="date" id="itEnd" value="${todayISO()}">
+      <label>종료 사유</label><select id="itReason">${IT_END_REASONS.filter(r => r !== "효과 부족 → 변경").map(r => `<option>${r}</option>`).join("")}<option>효과 부족(중단)</option></select>
+      <input id="itNote" placeholder="메모 (선택)">
+      <div class="row"><button class="btn-sm" onclick="endCourse('${id}')">종료 저장</button>
+        <button class="btn-sm ghost" onclick="renderITBox()">취소</button></div></div>`;
+  box.innerHTML = `<div class="it-title">💊 면역치료${cur ? ` <span class="on">· ${esc(cur.drug)} 진행 중</span>` : ""}</div>
+    ${list || '<div class="m">기록 없음</div>'}
+    ${form || `<button class="btn-sm ghost" onclick="renderITBox('start')">${cur ? "약 변경" : "+ 치료 시작 등록"}</button>`}`;
+  if (mode === "start") $("itDrug").onchange = () => { $("itDrugOther").style.display = $("itDrug").value === "기타" ? "" : "none"; };
+}
+async function refreshIT() {
+  const pid = $("pid").value.trim();
+  if (!cloudReady() || !pid) { itCache = []; renderITBox(); return; }
+  try { itCache = await fetchCourses(pid); }
+  catch (e) { $("itBox").style.display = "flex"; $("itBox").innerHTML = `<div class="m" style="color:#c0392b;">면역치료 조회 실패: ${esc(e.message)}</div>`; return; }
+  if (pid !== $("pid").value.trim()) return;
+  renderITBox();
+}
+async function saveCourse() {
+  const pid = $("pid").value.trim();
+  let drug = $("itDrug").value;
+  if (drug === "기타") drug = $("itDrugOther").value.trim();
+  const start = $("itStart").value, note = $("itNote").value.trim() || null;
+  if (!drug) return alert("약 이름을 입력하세요.");
+  if (!start) return alert("시작일을 입력하세요.");
+  const cur = itCache.find(c => !c.end_date);
+  if (cur) {
+    if (start < cur.start_date) return alert(`새 시작일이 기존 ${cur.drug} 시작일(${cur.start_date})보다 빠릅니다.`);
+    const { error } = await sb.from("immunotherapy_courses")
+      .update({ end_date: start, end_reason: $("itPrevReason").value }).eq("id", cur.id);
+    if (error) return alert("기존 치료 종료 실패: " + error.message);
+  }
+  const { error } = await sb.from("immunotherapy_courses").insert({ chart_no: pid, drug, start_date: start, note });
+  if (error) return alert("저장 실패: " + error.message);
+  refreshIT();
+}
+async function endCourse(id) {
+  const c = itCache.find(x => x.id === id);
+  const end = $("itEnd").value, add = $("itNote").value.trim();
+  if (!end) return alert("종료일을 입력하세요.");
+  if (c && end < c.start_date) return alert("종료일이 시작일보다 빠릅니다.");
+  const note = add ? [c && c.note, add].filter(Boolean).join(" / ") : (c && c.note) || null;
+  const { error } = await sb.from("immunotherapy_courses")
+    .update({ end_date: end, end_reason: $("itReason").value, note }).eq("id", id);
+  if (error) return alert("저장 실패: " + error.message);
+  refreshIT();
+}
+async function deleteCourse(id) {
+  const c = itCache.find(x => x.id === id);
+  if (!c || !confirm(`${c.drug} (${c.start_date}~) 기록을 삭제할까요?\n(되돌릴 수 없습니다)`)) return;
+  const { error } = await sb.from("immunotherapy_courses").delete().eq("id", id);
+  if (error) alert("삭제 실패: " + error.message);
+  refreshIT();
+}
+
+// ── 면역치료 환자 목록 ──
+let itList = [];
+async function showITList() {
+  const el = $("report");
+  $("placeholder").style.display = "none";
+  el.style.display = "block";
+  el.innerHTML = '<div style="color:#888;">불러오는 중...</div>';
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  const { data: courses, error } = await sb.from("immunotherapy_courses").select("*");
+  if (error) { el.innerHTML = `<div class="ai-error">조회 실패: ${esc(error.message)}</div>`; return; }
+  const byPid = new Map();
+  courses.forEach(c => { if (!byPid.has(c.chart_no)) byPid.set(c.chart_no, []); byPid.get(c.chart_no).push(c); });
+  let tests = [];
+  if (byPid.size) {
+    const r = await sb.from("allergy_tests").select("chart_no,test_date,panel,results").in("chart_no", [...byPid.keys()]);
+    if (r.error) { el.innerHTML = `<div class="ai-error">조회 실패: ${esc(r.error.message)}</div>`; return; }
+    tests = r.data || [];
+  }
+  const today = todayISO();
+  itList = [...byPid.entries()].map(([pid, cs]) => {
+    const asc = [...cs].sort((a, b) => a.start_date.localeCompare(b.start_date));
+    const cur = asc.find(c => !c.end_date);
+    const tr = trendRows(tests.filter(t => t.chart_no === pid));
+    const last = tr[tr.length - 1];
+    let due = { text: "", cls: "" };
+    if (cur) {
+      if (!last) due = { text: "진드기 검사 기록 없음", cls: "bad" };
+      else {
+        const m = monthsSince(last.t.test_date, today);
+        if (m >= 12) due = { text: `검사 지남 (${m}개월 경과)`, cls: "bad" };
+        else if (m >= 6) due = { text: `검사 시기 (${m}개월 경과)`, cls: "warn" };
+        else due = { text: `다음 ${addMonths(last.t.test_date, 6)} ~ ${addMonths(last.t.test_date, 12)}`, cls: "" };
+      }
+    }
+    return { pid, asc, cur, last, due, drug: cur ? cur.drug : asc[asc.length - 1].drug };
+  }).sort((a, b) => (b.cur ? 1 : 0) - (a.cur ? 1 : 0) || a.pid.localeCompare(b.pid));
+  renderITList("진행 중");
+}
+function renderITList(filter) {
+  const F = ["진행 중", ...IT_DRUGS, "검사 필요", "종료", "전체"];
+  const pass = r => filter === "전체" ? true : filter === "진행 중" ? !!r.cur : filter === "종료" ? !r.cur
+    : filter === "검사 필요" ? !!r.cur && (r.due.cls === "bad" || r.due.cls === "warn") : !!r.cur && r.cur.drug === filter;
+  const rows = itList.filter(pass);
+  const cnt = f => itList.filter(r => (f === "전체" ? true : f === "진행 중" ? !!r.cur : f === "종료" ? !r.cur
+    : f === "검사 필요" ? !!r.cur && (r.due.cls === "bad" || r.due.cls === "warn") : !!r.cur && r.cur.drug === f)).length;
+  $("report").innerHTML = `
+    <div class="itl-head"><div class="rpt-title">면역치료 환자 목록</div>
+      <div class="itl-filters">${F.map(f => `<button class="${f === filter ? "on" : ""}" onclick="renderITList('${f}')">${f} ${cnt(f)}</button>`).join("")}</div></div>
+    <table class="rpt-table itl"><thead><tr><th>등록번호</th><th>현재 약</th><th>치료 경과</th><th>약 변경 이력</th><th>최근 진드기 검사</th><th>다음 검사</th><th></th></tr></thead>
+    <tbody>${rows.length ? rows.map(r => `<tr>
+      <td><b>${esc(r.pid)}</b></td>
+      <td>${r.cur ? `<b>${esc(r.cur.drug)}</b>` : `<span style="color:#888;">종료 (${esc(r.drug)})</span>`}</td>
+      <td>${r.cur ? `${esc(r.cur.start_date)} 시작<br><span class="m">${monthsSince(r.cur.start_date, todayISO()) + 1}개월째</span>` : `<span class="m">${esc(r.asc[r.asc.length - 1].end_date || "")} 종료</span>`}</td>
+      <td>${r.asc.length > 1 ? r.asc.map(c => esc(c.drug)).join(" → ") + `<br><span class="m">${esc(r.asc.filter(c => c.end_reason).map(c => c.end_reason).join(", "))}</span>` : `<span class="m">—</span>`}</td>
+      <td>${r.last ? `${esc(r.last.t.test_date)}<br><span class="m">${TREND.map(([c, l]) => r.last.v[c] ? `${l} ${esc(fmtVal(r.last.v[c]))}` : "").filter(Boolean).join(" · ")}</span>` : '<span class="m">—</span>'}</td>
+      <td class="due ${r.due.cls}">${esc(r.due.text)}</td>
+      <td><button class="btn-sm ghost" onclick="openPatient('${esc(r.pid)}')">열기</button></td></tr>`).join("")
+      : `<tr><td colspan="7" style="color:#888;text-align:center;padding:16px;">해당 환자 없음</td></tr>`}</tbody></table>
+    <div class="rpt-footer">다음 검사: 최근 진드기 검사 후 6~12개월 · 6개월 경과 시 '검사 시기', 12개월 경과 시 '검사 지남'</div>`;
+}
+function openPatient(pid) {
+  $("pid").value = pid;
+  $("report").style.display = "none";
+  $("placeholder").style.display = "";
+  refreshHistory();
+  $("pid").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // ════════════════════════════════════════
@@ -604,6 +1027,7 @@ async function saveAI(id, html) {
 
 function renderCloudBox() {
   const box = $("cloudBox");
+  $("itListBtn").style.display = cloudReady() ? "" : "none";
   if (!sb) {
     box.innerHTML = `<div class="off">클라우드 미설정 — 기록 저장·이전 검사 비교가 꺼져 있습니다.<br>(index.html 상단 SUPABASE 설정, SETUP.md 참고)</div>`;
     $("localKeyBox").open = true;
@@ -629,7 +1053,7 @@ async function login() {
 }
 async function logout() { await sb.auth.signOut(); }
 
-// 등록번호 입력 시 이전 검사 목록 표시
+// 등록번호 입력 시 이전 검사 목록 + 면역치료 기록 표시
 let histTimer = null, histCache = [];
 function scheduleHistory() {
   clearTimeout(histTimer);
@@ -637,6 +1061,7 @@ function scheduleHistory() {
 }
 async function refreshHistory() {
   const box = $("histBox"), pid = $("pid").value.trim();
+  refreshIT();
   if (!cloudReady() || !pid) { box.classList.remove("show"); box.innerHTML = ""; histCache = []; return; }
   try {
     histCache = await fetchHistory(pid);
@@ -648,7 +1073,7 @@ async function refreshHistory() {
   box.innerHTML = histCache.length
     ? `<div class="hist-title">이전 검사 ${histCache.length}건</div>` + histCache.map(t => `
         <div class="hist-item"><span class="d">${esc(t.test_date)}</span>
-          <span class="m">${esc(t.panel)}${t.total_ige ? " · IgE " + esc(t.total_ige) : ""} · 양성 ${(t.results || []).length}</span>
+          <span class="m">${esc(panelLabel(t.panel))}${t.total_ige ? " · IgE " + esc(t.total_ige) : ""} · 양성 ${(t.results || []).filter(r => isIgE(r) && r.cls > 0).length}</span>
           <button onclick="loadRecord('${t.id}')">불러오기</button>
           <button class="x" title="삭제" onclick="deleteRecord('${t.id}')">✕</button></div>`).join("")
     : `<div class="hist-empty">저장된 이전 검사 없음 (첫 검사)</div>`;
@@ -659,7 +1084,8 @@ function loadRecord(id) {
   if (!t) return;
   $("ige").value = t.total_ige ?? "";
   $("testDate").value = t.test_date;
-  $("panel").value = t.panel;
+  $("panel").value = PANELS[t.panel] ? t.panel : "기타";
+  onPanelChange();
   $("rawInput").value = t.raw_input || "";
   generate({ stored: t });
 }
@@ -684,43 +1110,47 @@ async function generate(opts = {}) {
   const ige   = $("ige").value.trim();
   const raw   = $("rawInput").value.trim();
   const panel = $("panel").value;
+  const numeric = PANELS[panel].numeric;
   const testDate = $("testDate").value || todayISO();
   const errEl = $("errMsg");
   errEl.style.display = "none";
-  if (!raw) { errEl.textContent="검사 결과를 입력해주세요."; errEl.style.display="block"; return; }
-  const parsed = parseInput(raw);
-  if (!Object.keys(parsed).length) {
-    errEl.textContent='형식 오류: "- Class 1 : 항원명1, 항원명2" 형식으로 입력하세요.';
-    errEl.style.display="block"; return;
+  if (!raw) { errEl.textContent = "검사 결과를 입력해주세요."; errEl.style.display = "block"; return; }
+  const { entries, bad } = buildEntries(panel, raw);
+  if (!entries.length) {
+    errEl.textContent = numeric ? '형식 오류: "dp 45.2, df 38.1, dpg 12.3" 처럼 항목과 수치를 입력하세요.'
+                                : '형식 오류: "- Class 1 : 항원명1, 항원명2" 형식으로 입력하세요.';
+    errEl.style.display = "block"; return;
   }
-  const total = Object.values(parsed).reduce((s,a)=>s+a.length,0);
-  const classSorted = Object.keys(parsed).map(Number).sort((a,b)=>b-a);
-  const unmatched = [];
+  const igeE = entries.filter(e => e.kind === "IgE");
+  const pos = igeE.filter(e => e.cls > 0), neg = igeE.filter(e => !e.cls), iggE = entries.filter(e => e.kind === "IgG");
+  const byCls = {};
+  pos.forEach(e => (byCls[e.cls] = byCls[e.cls] || []).push(e));
+  const classSorted = Object.keys(byCls).map(Number).sort((a, b) => b - a);
+  const unmatched = igeE.filter(e => !e.item).map(e => e.name);
+  const fixed = entries.filter(e => e.fuzzy).map(e => `${e.name} → ${e.canon}`);
   let hasFood = false;
 
   let rows = "";
   classSorted.forEach(cls => {
-    parsed[cls].forEach((name, i) => {
-      const d = findAllergen(name);
-      const isFirst = (i === 0);
-      const rowspan = parsed[cls].length;
-      const clsCell = isFirst
-        ? `<td rowspan="${rowspan}" style="text-align:center;vertical-align:middle;border-right:2px solid #e0e4ec;">
+    byCls[cls].forEach((e, i) => {
+      const d = e.item;
+      const clsCell = i === 0
+        ? `<td rowspan="${byCls[cls].length}" style="text-align:center;vertical-align:middle;border-right:2px solid #e0e4ec;">
             <span class="cb ${CLASS_COLOR[cls] || "c6"}">Class ${cls}</span><br>
-            <span style="font-size:9px;color:#888;">${CLASS_LV[cls]||""}</span>
+            <span style="font-size:9px;color:#888;">${CLASS_LV[cls] || ""}</span>
            </td>`
         : "";
+      const val = e.value != null ? `<div class="val-line">${esc(valStr(e))} kU/L</div>` : "";
       if (d) {
         if (isFood(d)) hasFood = true;
-        const cross = (d["교차 반응 가능 항목"]||"").trim();
-        const hasCross = cross && cross !== "없음";
-        const tags = hasCross
-          ? cross.split(/[\s,]+/).filter(Boolean).map(t=>`<span class="ct">${esc(t)}</span>`).join("")
+        const cross = (d["교차 반응 가능 항목"] || "").trim();
+        const tags = cross && cross !== "없음"
+          ? cross.split(/[\s,]+/).filter(Boolean).map(t => `<span class="ct">${esc(t)}</span>`).join("")
           : '<span style="color:#bbb;font-size:9px;">—</span>';
         rows += `<tr>
           ${clsCell}
           <td><span class="aname">${esc(d["항목명"])}</span><span class="season-badge">${esc(d["계절"])}</span>${
-            d["위험"] ? `<span class="risk-badge">${esc(d["위험"])} 주의</span>` : ""}${
+            d["위험"] ? `<span class="risk-badge">${esc(d["위험"])} 주의</span>` : ""}${val}${
             d["성분해설"] ? `<div class="comp-note">${esc(d["성분해설"])}</div>` : ""}</td>
           <td>${esc(d["증상 악화 상황"])}</td>
           <td><div class="ctags">${tags}</div></td>
@@ -728,22 +1158,28 @@ async function generate(opts = {}) {
           <td class="imp-txt">${esc(d["개선 방법"])}</td>
         </tr>`;
       } else {
-        unmatched.push(name);
         rows += `<tr>
           ${clsCell}
-          <td colspan="5"><span class="aname">${esc(name)}</span> <span style="color:#aaa;font-size:9px;">(DB 미등록)</span></td>
+          <td colspan="5"><span class="aname">${esc(e.name)}</span> <span style="color:#aaa;font-size:9px;">(DB 미등록)</span>${val}</td>
         </tr>`;
       }
     });
   });
+  if (!rows) rows = `<tr><td colspan="6" style="text-align:center;color:#888;padding:12px;">양성(Class 1 이상) 항목 없음</td></tr>`;
+
+  const notices = [
+    unmatched.length ? `⚠ DB에 없는 항원명: <b>${unmatched.map(esc).join(", ")}</b> — 오타이거나 DB 별칭 추가가 필요합니다.` : "",
+    fixed.length ? `✎ 입력 자동 보정: <b>${fixed.map(esc).join(", ")}</b> — 맞는지 확인하세요.` : "",
+    bad.length ? `⚠ 수치를 읽지 못한 입력: <b>${bad.map(esc).join(", ")}</b>` : "",
+  ].filter(Boolean).map(t => `<div class="unmatched no-print">${t}</div>`).join("");
 
   const html = `
     <div id="cloudStatus" class="cloud-status no-print"></div>
-    ${unmatched.length ? `<div class="unmatched no-print">⚠ DB에 없는 항원명: <b>${unmatched.map(esc).join(", ")}</b> — 오타이거나 DB 별칭 추가가 필요합니다.</div>` : ""}
+    ${notices}
     <div class="rpt-head">
       <div><img src="${LOGO_URI}" alt="청아소아청소년과"></div>
       <div class="rpt-head-right">
-        <div class="rpt-title">알레르기 항원 검사 안내문</div>
+        <div class="rpt-title">${numeric ? "특이 IgE 알레르기 검사 안내문" : "알레르기 항원 검사 안내문"}</div>
         <div class="rpt-meta">
           ${pid   ? `<div class="meta-item"><div class="meta-lbl">등록번호</div><div class="meta-val">${esc(pid)}</div></div>` : ""}
           ${pname ? `<div class="meta-item"><div class="meta-lbl">이름</div><div class="meta-val">${esc(pname)}</div></div>` : ""}
@@ -752,7 +1188,9 @@ async function generate(opts = {}) {
         </div>
       </div>
     </div>
-    <div class="summary">총 <strong>${total}개</strong> 항원 양성 반응 · Class가 높을수록 반응 강도가 강합니다</div>
+    <div class="summary">${numeric
+      ? `총 <strong>${igeE.length}개</strong> 항목 측정 · 양성 <strong>${pos.length}개</strong>${iggE.length ? ` · IgG ${iggE.length}개` : ""} · Class가 높을수록 반응 강도가 강합니다`
+      : `총 <strong>${pos.length}개</strong> 항원 양성 반응 · Class가 높을수록 반응 강도가 강합니다`}</div>
     ${hasFood ? `<div class="food-note">🍽 식품 항목의 양성은 <b>'감작'</b>으로, 실제로 먹었을 때 반응하는 '알레르기'와 다를 수 있습니다. <b>이미 먹고 증상이 없던 음식은 끊지 마시고</b>, 식이 제한은 담당 의사와 상의해 결정하세요.</div>` : ""}
     <table class="rpt-table">
       <thead>
@@ -767,9 +1205,13 @@ async function generate(opts = {}) {
       </thead>
       <tbody>${rows}</tbody>
     </table>
+    ${neg.length ? `<div class="neg-line">음성 (Class 0${numeric ? ", &lt;0.35 kU/L" : ""}): ${neg.map(e => `${esc(e.canon || e.name)}${e.value != null ? " " + esc(valStr(e)) : ""}`).join(", ")}</div>` : ""}
+    ${iggE.length && !(sb && currentUser && pid) ? `<div class="neg-line">IgG: ${iggE.map(e => `${esc(e.canon)} ${esc(valStr(e))}`).join(", ")}</div>` : ""}
     <div id="cmpSlot"></div>
+    <div id="itSlot"></div>
     <div class="rpt-footer">
-      ※ 본 결과는 MAST 검사 결과를 바탕으로 한 안내 자료입니다. 교차반응 항목은 개인에 따라 다를 수 있으며, 실제 반응 여부는 담당 의사와 상담하세요.
+      ${numeric ? "※ 특이 IgE Class 기준(kU/L): 0 &lt;0.35 · 1 0.35–0.7 · 2 0.7–3.5 · 3 3.5–17.5 · 4 17.5–50 · 5 50–100 · 6 ≥100<br>" : ""}
+      ※ 본 결과는 알레르기 검사 결과를 바탕으로 한 안내 자료입니다. 교차반응 항목은 개인에 따라 다를 수 있으며, 실제 반응 여부는 담당 의사와 상담하세요.
     </div>
   `;
 
@@ -793,18 +1235,19 @@ async function generate(opts = {}) {
   $("placeholder").style.display = "none";
   el.scrollIntoView({behavior:"smooth",block:"start"});
 
-  // ── 이전 검사 비교 + 클라우드 저장 ──
+  // ── 이전 검사 비교 · 면역치료 경과 · 클라우드 저장 ──
   const cur = { chart_no: pid, test_date: testDate, panel, total_ige: ige || null,
-                results: toResults(parsed), raw_input: raw, ai_html: null };
-  if (opts.stored) cur.id = opts.stored.id;
-  let cmp = null, savedId = opts.stored ? opts.stored.id : null;
+                results: entries.map(e => ({ name: e.name, canon: e.canon, kind: e.kind, cls: e.cls, value: e.value, op: e.op || null })),
+                raw_input: raw, ai_html: null };
+  let cmp = null, savedId = opts.stored ? opts.stored.id : null, history = [], courses = [];
   if (!sb) setCloudStatus("클라우드 미설정 — 저장·비교 없이 보고서만 생성했습니다.");
   else if (!currentUser) setCloudStatus("로그인하지 않아 저장·이전 검사 비교를 하지 않았습니다.", "bad");
   else if (!pid) setCloudStatus("등록번호가 없어 저장·이전 검사 비교를 하지 않았습니다.", "bad");
   else {
     try {
-      const history = await fetchHistory(pid);
-      const prev = history.find(t => t.test_date < testDate);
+      [history, courses] = await Promise.all([fetchHistory(pid), fetchCourses(pid)]);
+      // 같은 검사 종류의 직전 검사 우선, 없으면 종류와 무관하게 직전 검사
+      const prev = history.find(t => t.test_date < testDate && t.panel === panel) || history.find(t => t.test_date < testDate);
       if (prev) {
         cmp = compareTests(prev, cur);
         $("cmpSlot").innerHTML = renderCompare(cmp, history);
@@ -821,16 +1264,17 @@ async function generate(opts = {}) {
       setCloudStatus("클라우드 오류: " + e.message, "bad");
     }
   }
+  const trend = trendRows([...history.filter(t => !(t.test_date === testDate && t.panel === panel)), { ...cur, __cur: true }]);
+  const showIT = courses.length > 0 || (iggE.length > 0 && cloudReady() && !!pid);
+  if (showIT) $("itSlot").innerHTML = renderITSection(courses, trend);
 
-  const allergenDetails = [];
-  classSorted.forEach(cls => {
-    parsed[cls].forEach(name => {
-      allergenDetails.push({ name, cls, data: findAllergen(name) });
-    });
-  });
-
+  const ai = {
+    ige, numeric, pos, neg, cmp,
+    it: showIT ? itText(courses, trend) : (iggE.length ? `- 면역치료 기록 없음\n- 이번 IgG: ${iggE.map(e => `${e.canon} ${valStr(e)}`).join(", ")}` : null),
+    onIT: courses.some(c => !c.end_date),
+  };
   const run = async () => {
-    const out = await runAIAnalysis(ige, parsed, allergenDetails, cmp);
+    const out = await runAIAnalysis(ai);
     if (out && savedId && cloudReady()) saveAI(savedId, out);
   };
   $("aiRetry").onclick = run;
@@ -843,23 +1287,28 @@ async function generate(opts = {}) {
   }
 }
 
-async function runAIAnalysis(ige, parsed, allergenDetails, cmp) {
+async function runAIAnalysis({ ige, numeric, pos, neg, cmp, it, onIT }) {
   const aiBody = $("aiBody");
   $("aiRetry").style.display = "none";
   aiBody.className = "ai-body loading";
   aiBody.innerHTML = '<div class="ai-spinner"></div> AI가 검사 결과를 분석 중입니다...';
 
-  const lines = [];
-  const classSorted = Object.keys(parsed).map(Number).sort((a,b)=>b-a);
-  classSorted.forEach(cls => {
-    lines.push(`[Class ${cls}] ${parsed[cls].join(", ")}`);
-  });
+  const byCls = {};
+  pos.forEach(e => (byCls[e.cls] = byCls[e.cls] || []).push(e));
+  const lines = Object.keys(byCls).map(Number).sort((a, b) => b - a)
+    .map(cls => `[Class ${cls}] ` + byCls[cls].map(e => `${e.canon || e.name}${e.value != null ? ` (${valStr(e)} kU/L)` : ""}`).join(", "));
+  if (neg.length) lines.push(`[음성 — 측정했으나 Class 0] ` + neg.map(e => `${e.canon || e.name}${e.value != null ? ` (${valStr(e)})` : ""}`).join(", "));
 
-  const detailLines = allergenDetails.map(d => {
-    if (!d.data) return `- ${d.name}: (DB 미등록)`;
-    const x = d.data;
-    return `- ${x["항목명"]} (Class ${d.cls}, ${x["분류"]}${x["위험"] ? ", " + x["위험"] + " 위험" : ""}): 교차반응=${x["교차 반응 가능 항목"]}, 주의=${x["주의사항"]}${x["성분해설"] ? `, 성분=${x["성분해설"]}` : ""}`;
+  const detailLines = pos.map(e => {
+    const x = e.item;
+    if (!x) return `- ${e.name}: (DB 미등록)`;
+    return `- ${x["항목명"]} (Class ${e.cls}, ${x["분류"]}${x["위험"] ? ", " + x["위험"] + " 위험" : ""}): 교차반응=${x["교차 반응 가능 항목"]}, 주의=${x["주의사항"]}${x["성분해설"] ? `, 성분=${x["성분해설"]}` : ""}`;
   }).join("\n");
+
+  // 섹션 번호를 상황에 맞게 이어 붙임
+  const extra = [];
+  if (cmp) extra.push(["이전 검사와 비교", `[이전 검사 대비 변화]에 있는 내용만 사용해 무엇이 좋아지고 나빠졌는지 보호자가 이해하기 쉽게 설명. Class 1단계 변화는 검사 간 변동일 수 있으므로 과도하게 해석하지 말고, 2단계 이상 상승·새로 생긴 Class 3 이상 항원·Total IgE의 큰 변화 위주로 의미를 설명. 검사 종류가 다르다는 표시가 있으면 그 한계를 언급. 관리 효과는 단정하지 말고 가능성으로 표현.`]);
+  if (it) extra.push(["면역치료 경과", `[면역치료 정보]만 사용. 사용 중인 약과 기간, 약 변경 이력(이유 포함)을 정리하고, 진드기 수치 추이를 약 변경 전후로 구분해 설명. Dp/Df IgG 상승은 면역치료에 대한 면역 반응과 꾸준한 복용을 시사하는 보조 지표이고, 특이 IgE는 치료 초기에 일시적으로 오르다가 수년에 걸쳐 내려갈 수 있으므로 단기 상승을 치료 실패로 해석하지 말 것. 수치는 임상 효과와 일대일로 대응하지 않으며 증상 호전이 가장 중요함을 강조. 진행 중이면 다음 추적 검사(6~12개월 후)를 안내.`]);
 
   // 환자 이름·등록번호는 AI 에 보내지 않음 (분석에 불필요한 식별정보)
   const prompt = `당신은 소아청소년과 전문의를 보조하는 알레르기 전문 AI입니다.
@@ -868,25 +1317,32 @@ async function runAIAnalysis(ige, parsed, allergenDetails, cmp) {
 - Total IgE 정상 범위: 100 IU/mL 미만. 100 IU/mL 이상은 elevated로 설명할 것
 - "150 IU/mL 이상 비정상" 같은 표현 절대 사용 금지
 - Class 등급: 1-2 경증, 3-4 중등도, 5-6 중증
-- 검사 결과에 없는 항원은 Class 0(음성)이므로 절대 언급하지 말 것. 결과에 없는 항원에 대해 "없어서 다행" 같은 언급도 금지.
-- 설하면역치료는 위 검사 결과 목록에 집먼지진드기(Dp) 또는 집먼지진드기(Df)가 실제로 포함된 경우에만 5번 항목에서 권고할 것. 집먼지(house dust)만 양성이고 집먼지진드기(Dp/Df)가 없는 경우에도 설하면역치료 언급 완전 금지. 결과에 집먼지진드기(Dp 또는 Df)가 없으면 설하면역치료 절대 언급 금지.
-- 집먼지진드기(Dp/Df) 양성 시에만: 설하면역치료는 집먼지진드기 알레르기의 근본적 치료법으로 3~5년 복용 시 알레르기 반응 자체를 줄여주며 소아 천식 예방 효과도 있음을 안내하고, 본원 처방 가능함을 언급할 것.
-- Total IgE가 60 IU/mL 이상으로 elevated되어 있으나 모든 항원이 Class 2 이하로 낮은 경우, 5번 항목에서 콜린성두드러기(운동, 열, 땀 등 자극에 의한 두드러기) 가능성을 고려해야 함을 언급할 것. 단, IgE가 60 미만이거나 Class 3 이상 항원이 있는 경우에는 콜린성두드러기 언급 금지.
+- 검사 결과에 없는 항원은 절대 언급하지 말 것. 결과에 없는 항원에 대해 "없어서 다행" 같은 언급도 금지. [음성] 항목은 측정했으나 음성인 항목으로, 임상적 의미가 있을 때만 언급할 것.
+- 설하면역치료는 위 검사 결과 목록에 집먼지진드기(Dp) 또는 집먼지진드기(Df)가 실제로 양성인 경우에만 5번 항목에서 언급할 것. 집먼지(house dust)만 양성이고 집먼지진드기(Dp/Df)가 없는 경우에도 설하면역치료 언급 완전 금지.
+- ${onIT
+      ? "이 환아는 현재 설하면역치료 중임. 5번에서 치료를 새로 권고하지 말고, 꾸준한 복용의 중요성과 다음 추적 검사 시기를 안내할 것."
+      : "집먼지진드기(Dp/Df) 양성 시에만: 설하면역치료는 집먼지진드기 알레르기의 근본적 치료법으로 3~5년 복용 시 알레르기 반응 자체를 줄여주며 소아 천식 예방 효과도 있음을 안내하고, 본원 처방 가능함을 언급할 것."}
+- Total IgE가 60 IU/mL 이상으로 elevated되어 있으나 모든 항원이 Class 2 이하로 낮은 경우, 5번 항목에서 콜린성두드러기(운동, 열, 땀 등 자극에 의한 두드러기) 가능성을 고려해야 함을 언급할 것. 단, IgE가 60 미만이거나 Class 3 이상 항원이 있는 경우, 또는 Total IgE가 없는 경우에는 콜린성두드러기 언급 금지.
 - 식품 항원 양성은 '감작'이며 실제로 먹었을 때의 알레르기와 다를 수 있음. 이미 먹고 증상이 없던 식품은 계속 먹어도 된다는 원칙을 4번에 포함하고, 검사 결과만으로 불필요한 식이 제한을 권하지 말 것.
+- 계란 성분 해석: 난백점소(오보뮤코이드)는 열에 강해 양성이면 충분히 가열한 계란에도 반응할 수 있고 알레르기가 오래갈 가능성을 시사함. 오보뮤코이드가 음성이고 난백알부민(오브알부민) 위주로 양성이면 충분히 가열한 계란(베이킹 제품 등)은 먹을 수 있는 경우가 많음. 섭취 시도는 반드시 의사 지도하에 하도록 안내.
 - 계란 알레르기가 있어도 독감 등 예방접종은 접종 가능함. 백신 회피를 권하지 말 것.
 - 결과에 CCD가 있으면 1번 항목에서 꽃가루·과일·채소·견과류 등 식물성 항원 결과가 CCD 때문에 실제보다 높게(위양성) 나올 수 있음을 언급할 것. CCD가 없으면 CCD 언급 금지.
 - 생선(대구·연어 등)과 조개류(홍합·굴 등)는 서로 교차반응하지 않음.
+- 아래 제공된 수치는 바꾸지 말고 그대로 인용할 것.
 
-MAST 알레르기 검사 결과입니다.${ige ? ` Total IgE: ${ige} IU/mL (기준: 100 IU/mL 미만 정상).` : ""}
+${numeric ? "특이 IgE(개별 항목) 알레르기 검사 결과입니다. 수치 단위 kU/L." : "MAST 알레르기 검사 결과입니다."}${ige ? ` Total IgE: ${ige} IU/mL (기준: 100 IU/mL 미만 정상).` : ""}
 
 [검사 결과]
-${lines.join("\n")}
+${lines.join("\n") || "(양성 항목 없음)"}
 
 [항원 상세]
-${detailLines}
+${detailLines || "(없음)"}
 ${cmp ? `
-[이전 검사 대비 변화 — 프로그램이 계산한 값, 숫자를 바꾸지 말 것]
+[이전 검사 대비 변화 — 프로그램이 계산한 값]
 ${compareText(cmp)}
+` : ""}${it ? `
+[면역치료 정보]
+${it}
 ` : ""}
 위 결과를 바탕으로 아래 항목에 맞춰 보호자용 안내문 형식으로 분석해주세요. 의학적으로 정확하되 보호자가 이해하기 쉬운 언어로 작성하고, HTML 태그(h3, ul, li, strong, p)만 사용하세요. 마크다운 기호(#, *, -)는 사용하지 마세요.
 
@@ -903,10 +1359,10 @@ Class 3 이상 항원 위주로 왜 중요한지 설명
 식이 조절, 환경 관리, 계절별 주의사항 등 구체적 실천 방법
 
 <h3>5. 추가 검사 또는 치료 고려사항</h3>
-면역치료 대상 가능성, 추적 검사 권고 등${cmp ? `
+면역치료 대상 가능성, 추적 검사 권고 등${extra.map(([t, d], i) => `
 
-<h3>6. 이전 검사와 비교</h3>
-[이전 검사 대비 변화]에 있는 내용만 사용해 무엇이 좋아지고 나빠졌는지 보호자가 이해하기 쉽게 설명. Class 1단계 변화는 검사 간 변동일 수 있으므로 과도하게 해석하지 말고, 2단계 이상 상승·새로 생긴 Class 3 이상 항원·Total IgE의 큰 변화 위주로 의미를 설명. 패널이 다르다는 표시가 있으면 그 한계를 언급. 관리 효과(예: 환경관리 후 진드기 Class 하강)는 단정하지 말고 가능성으로 표현.` : ""}`;
+<h3>${6 + i}. ${t}</h3>
+${d}`).join("")}`;
 
   try {
     let text = await callAI(prompt);
@@ -987,12 +1443,13 @@ function loadApiKey() {
     $("apiKeyStatus").textContent = "저장된 키 불러옴";
     $("apiKeyStatus").style.color = "#27ae60";
   }
-  try { const p = localStorage.getItem("chungah_panel"); if (p) $("panel").value = p; } catch (_) {}
+  try { const p = localStorage.getItem("chungah_panel"); if (p && PANELS[p]) $("panel").value = p; } catch (_) {}
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   loadApiKey();
-  $("panel").addEventListener("change", () => { try { localStorage.setItem("chungah_panel", $("panel").value); } catch (_) {} });
+  onPanelChange();
+  $("panel").addEventListener("change", onPanelChange);
   $("pid").addEventListener("input", scheduleHistory);
   renderCloudBox();
   if (sb) {
