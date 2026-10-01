@@ -425,8 +425,8 @@ const ALLERGY_DB = [{"항목명": "집먼지진드기(Dp)", "분류": "진드기
 //  클라우드 설정 (SETUP.md 참고) — 비워두면 클라우드 기능 꺼짐(로컬 키로만 동작)
 //  anon key 는 공개돼도 되는 키. 실제 보호는 Supabase 로그인 + RLS(staff 목록)가 담당
 // ════════════════════════════════════════
-const SUPABASE_URL      = "";   // 예) https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY = "";   // Project Settings → API → anon public
+const SUPABASE_URL      = "https://ignbyjkoqijirnycmcyt.supabase.co";   // 예) https://abcdefgh.supabase.co
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbmJ5amtvcWlqaXJueWNtY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MzA2NTUsImV4cCI6MjEwNjQwNjY1NX0.3VGnkDTJXUb3rZwcp0p95oRZj1d3UNQfF7ShcPZCoHQ";   // Project Settings → API → anon public
 const AI_MODEL = "claude-haiku-4-5-20251001";
 
 const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
