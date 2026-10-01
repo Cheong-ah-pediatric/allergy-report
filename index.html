@@ -824,6 +824,8 @@ function compareText(cmp) {
 // ════════════════════════════════════════
 const IT_DRUGS = ["스타로랄", "액트에어", "라이스정"];
 const IT_END_REASONS = ["효과 부족 → 변경", "부작용", "복용 불편·순응도", "치료 완료", "기타"];
+// Dp/Df IgG 단위는 mg/L (검사실 보고 단위)
+const IGG_UNIT = c => c.endsWith("IgG") ? " (mg/L)" : "";
 const TREND = [["집먼지진드기(Dp)", "Dp IgE"], ["집먼지진드기(Df)", "Df IgE"], ["Dp IgG", "Dp IgG"], ["Df IgG", "Df IgG"]];
 let itCache = [];
 
@@ -893,10 +895,10 @@ function renderITSection(courses, rows) {
   const courseLine = asc.length
     ? asc.map(c => `<span class="it-chip ${c.end_date ? "" : "on"}">${esc(c.drug)} ${esc(c.start_date)} ~ ${c.end_date ? esc(c.end_date) : "진행 중"}${c.end_reason ? ` · ${esc(c.end_reason)}` : ""}</span>`).join(" → ")
     : `<span style="color:#888;">면역치료 기록 없음</span>`;
-  const table = rows.length ? `<table class="cmp-table"><thead><tr><th>검사일</th><th>치료</th>${TREND.map(([, l]) => `<th>${l}</th>`).join("")}</tr></thead>
+  const table = rows.length ? `<table class="cmp-table"><thead><tr><th>검사일</th><th>치료</th>${TREND.map(([c, l]) => `<th>${l}${IGG_UNIT(c)}</th>`).join("")}</tr></thead>
     <tbody>${rows.map(({ t, v }) => `<tr${t.__cur ? ' class="cur-row"' : ""}><td>${esc(t.test_date)}</td><td>${esc(itLabelAt(t.test_date, courses) || "—")}</td>
       ${TREND.map(([c]) => `<td>${esc(fmtVal(v[c]))}</td>`).join("")}</tr>`).join("")}</tbody></table>` : "";
-  const charts = [["특이 IgE (Class)", TREND.slice(0, 2), true], ["IgG", TREND.slice(2), false]]
+  const charts = [["특이 IgE (Class)", TREND.slice(0, 2), true], ["IgG (mg/L)", TREND.slice(2), false]]
     .map(([title, ser, byClass]) => trendChart(title, ser, rows, courses, byClass)).join("");
   return `<div class="it-section"><div class="it-head">면역치료 경과 모니터링
       <span class="sub">${now ? `현재 ${esc(now.drug)} · ${monthsSince(now.start_date, todayISO()) + 1}개월째` : ""}</span></div>
@@ -911,7 +913,7 @@ function itText(courses, rows) {
   if (asc.length) asc.forEach(c => L.push(`- ${c.drug}: ${c.start_date} ~ ${c.end_date || "현재 진행 중"} (약 ${monthsSince(c.start_date, c.end_date || todayISO())}개월)${c.end_reason ? `, 종료 사유: ${c.end_reason}` : ""}${c.note ? `, 메모: ${c.note}` : ""}`));
   else L.push("- 면역치료 기록 없음");
   if (rows.length) {
-    L.push("[진드기 수치 추이 (IgE 단위 kU/L)]");
+    L.push("[진드기 수치 추이 (IgE는 Class, IgG 단위 mg/L)]");
     rows.forEach(({ t, v }) => L.push(`- ${t.test_date} (${itLabelAt(t.test_date, courses) || "치료 정보 없음"}): ` +
       TREND.map(([c, l]) => `${l} ${fmtVal(v[c])}`).join(", ")));
   }
@@ -1052,7 +1054,7 @@ function renderITList(filter) {
       <td>${r.cur ? `<b>${esc(r.cur.drug)}</b>` : `<span style="color:#888;">종료 (${esc(r.drug)})</span>`}</td>
       <td>${r.cur ? `${esc(r.cur.start_date)} 시작<br><span class="m">${monthsSince(r.cur.start_date, todayISO()) + 1}개월째</span>` : `<span class="m">${esc(r.asc[r.asc.length - 1].end_date || "")} 종료</span>`}</td>
       <td>${r.asc.length > 1 ? r.asc.map(c => esc(c.drug)).join(" → ") + `<br><span class="m">${esc(r.asc.filter(c => c.end_reason).map(c => c.end_reason).join(", "))}</span>` : `<span class="m">—</span>`}</td>
-      <td>${r.last ? `${esc(r.last.t.test_date)}<br><span class="m">${TREND.map(([c, l]) => r.last.v[c] ? `${l} ${esc(fmtVal(r.last.v[c]))}` : "").filter(Boolean).join(" · ")}</span>` : '<span class="m">—</span>'}</td>
+      <td>${r.last ? `${esc(r.last.t.test_date)}<br><span class="m">${TREND.map(([c, l]) => r.last.v[c] ? `${l} ${esc(fmtVal(r.last.v[c]))}${IGG_UNIT(c).replace(/[()]/g, "")}` : "").filter(Boolean).join(" · ")}</span>` : '<span class="m">—</span>'}</td>
       <td class="due ${r.due.cls}">${esc(r.due.text)}</td>
       <td><button class="btn-sm ghost" onclick="openPatient('${esc(r.pid)}')">열기</button></td></tr>`).join("")
       : `<tr><td colspan="7" style="color:#888;text-align:center;padding:16px;">해당 환자 없음</td></tr>`}</tbody></table>
@@ -1283,7 +1285,7 @@ async function generate(opts = {}) {
       <tbody>${rows}</tbody>
     </table>
     ${neg.length ? `<div class="neg-line">음성 (Class 0${numeric ? ", &lt;0.35 kU/L" : ""}): ${neg.map(e => `${esc(e.canon || e.name)}${e.value != null ? " " + esc(valStr(e)) : ""}`).join(", ")}</div>` : ""}
-    ${iggE.length && !(sb && currentUser && pid) ? `<div class="neg-line">IgG: ${iggE.map(e => `${esc(e.canon)} ${esc(valStr(e))}`).join(", ")}</div>` : ""}
+    ${iggE.length && !(sb && currentUser && pid) ? `<div class="neg-line">IgG (mg/L): ${iggE.map(e => `${esc(e.canon)} ${esc(valStr(e))}`).join(", ")}</div>` : ""}
     <div id="cmpSlot"></div>
     <div id="itSlot"></div>
     <div class="rpt-footer">
@@ -1347,7 +1349,7 @@ async function generate(opts = {}) {
 
   const ai = {
     ige, numeric, pos, neg, cmp,
-    it: showIT ? itText(courses, trend) : (iggE.length ? `- 면역치료 기록 없음\n- 이번 IgG: ${iggE.map(e => `${e.canon} ${valStr(e)}`).join(", ")}` : null),
+    it: showIT ? itText(courses, trend) : (iggE.length ? `- 면역치료 기록 없음\n- 이번 IgG: ${iggE.map(e => `${e.canon} ${valStr(e)} mg/L`).join(", ")}` : null),
     onIT: courses.some(c => !c.end_date),
   };
   const run = async () => {
