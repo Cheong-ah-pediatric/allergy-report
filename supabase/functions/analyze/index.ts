@@ -31,7 +31,8 @@ Deno.serve(async (req) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+      // Secret 붙여넣기 때 섞인 공백·줄바꿈·따옴표 제거
+      "x-api-key": (Deno.env.get("ANTHROPIC_API_KEY") ?? "").trim().replace(/^["']|["']$/g, ""),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
