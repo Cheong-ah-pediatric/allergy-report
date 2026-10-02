@@ -21,6 +21,11 @@
 2. `supabase/002_immunotherapy.sql` 내용을 전부 붙여넣고 **Run**
    (destructive 경고가 떠도 정상 — `drop ... if exists` 때문이며 지워지는 데이터 없음)
 
+## 2-2. 환자 이름(암호화) 표 추가
+1. SQL Editor → New query → `supabase/003_patients.sql` 붙여넣고 **Run**
+2. 사이트 로그인 후 왼쪽 위에 **병원 비밀문구**를 처음 한 번 만듦 (잊으면 이름 복구 불가 — 따로 적어둘 것)
+   - 다른 컴퓨터에선 같은 비밀문구를 한 번 입력하면 이름이 보임
+
 ## 3. 로그인 계정 만들기 (중요: 외부인 가입 차단)
 1. **Authentication → Sign In / Providers → Email**: `Allow new users to sign up` **끄기**
 2. **Authentication → Users → Add user → Create new user**
@@ -65,7 +70,7 @@
 ---
 
 ## 개인정보 관련
-- 클라우드에는 **등록번호 + 검사 결과만** 저장, **이름은 저장하지 않음** (인쇄 시에만 입력)
+- 이름은 **병원 비밀문구로 암호화**해서 저장 — DB·Supabase 에는 암호문만 있고, 비밀문구를 아는 컴퓨터에서만 이름이 보임
 - AI에는 이름·등록번호를 보내지 않음
 - GitHub 레포는 공개 상태이므로 **환자 데이터나 비밀 키를 레포에 올리지 말 것**
 - 무료 플랜은 **7일간 사용이 없으면 프로젝트가 일시정지**됩니다(데이터는 유지). 긴 휴가 후엔 대시보드에서 Restore.

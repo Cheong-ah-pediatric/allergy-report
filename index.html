@@ -334,6 +334,8 @@ textarea:focus{border-color:var(--accent);background:#fff;}
 .val{font-size:10px;color:#555;}
 .convert-note{font-size:10.5px;color:#7a5600;margin-top:-8px;}
 .convert-note:empty{display:none;}
+.all-search{padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;max-width:320px;}
+button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-size:10.5px;padding:0 0 0 4px;font-family:inherit;text-decoration:underline;}
 .neg-line{font-size:10.5px;color:#777;margin:-4px 0 10px;}
 .it-box{display:none;flex-direction:column;gap:5px;background:#f6f3fc;border:1px solid #e0d8f2;border-radius:6px;padding:8px 9px;font-size:11px;}
 .it-title{font-weight:700;color:#4a3c78;font-size:11.5px;}
@@ -387,7 +389,10 @@ textarea:focus{border-color:var(--accent);background:#fff;}
   <div class="input-panel">
     <div class="panel-title">클라우드 · 환자 기록 공유</div>
     <div id="cloudBox" class="cloud-box"></div>
-    <button id="itListBtn" class="btn-sm ghost" style="display:none;" onclick="showITList()">💊 면역치료 환자 목록</button>
+    <div id="listBtns" style="display:none;gap:6px;">
+      <button class="btn-sm ghost" onclick="showAllList()">👥 전체 환자 목록</button>
+      <button id="itListBtn" class="btn-sm ghost" onclick="showITList()">💊 면역치료 환자</button>
+    </div>
 
     <details id="localKeyBox" class="local-key">
       <summary>로컬 API 키 (클라우드 미사용 시)</summary>
@@ -413,7 +418,7 @@ textarea:focus{border-color:var(--accent);background:#fff;}
     </div>
     <div id="itBox" class="it-box"></div>
     <div class="form-group">
-      <label>이름 <span class="lbl-note">— 인쇄용, 클라우드에 저장 안 됨</span></label>
+      <label>이름 <span class="lbl-note">— 병원 비밀문구로 암호화해 저장</span></label>
       <input type="text" id="pname" placeholder="홍길동">
     </div>
     <div class="form-group">
@@ -1008,15 +1013,15 @@ async function showITList() {
   el.style.display = "block";
   el.innerHTML = '<div style="color:#888;">불러오는 중...</div>';
   el.scrollIntoView({ behavior: "smooth", block: "start" });
-  const { data: courses, error } = await sb.from("immunotherapy_courses").select("*");
-  if (error) { el.innerHTML = `<div class="ai-error">조회 실패: ${esc(error.message)}</div>`; return; }
+  let courses;
+  try { courses = await fetchAll(() => sb.from("immunotherapy_courses").select("*")); }
+  catch (error) { el.innerHTML = `<div class="ai-error">조회 실패: ${esc(error.message)}</div>`; return; }
   const byPid = new Map();
   courses.forEach(c => { if (!byPid.has(c.chart_no)) byPid.set(c.chart_no, []); byPid.get(c.chart_no).push(c); });
   let tests = [];
   if (byPid.size) {
-    const r = await sb.from("allergy_tests").select("chart_no,test_date,panel,results").in("chart_no", [...byPid.keys()]);
-    if (r.error) { el.innerHTML = `<div class="ai-error">조회 실패: ${esc(r.error.message)}</div>`; return; }
-    tests = r.data || [];
+    try { tests = await fetchAll(() => sb.from("allergy_tests").select("chart_no,test_date,panel,results").in("chart_no", [...byPid.keys()])); }
+    catch (error) { el.innerHTML = `<div class="ai-error">조회 실패: ${esc(error.message)}</div>`; return; }
   }
   const today = todayISO();
   itList = [...byPid.entries()].map(([pid, cs]) => {
@@ -1060,6 +1065,178 @@ function renderITList(filter) {
       : `<tr><td colspan="7" style="color:#888;text-align:center;padding:16px;">해당 환자 없음</td></tr>`}</tbody></table>
     <div class="rpt-footer">다음 검사: 최근 진드기 검사 후 6~12개월 · 6개월 경과 시 '검사 시기', 12개월 경과 시 '검사 지남'</div>`;
 }
+// ════════════════════════════════════════
+//  환자 이름 암호화 — 병원 비밀문구 → AES-GCM. 서버에는 암호문만 저장, 비밀문구는 저장 안 함
+// ════════════════════════════════════════
+const NAME_KEY_LS = "chungah_name_key";   // 이 컴퓨터에 보관하는 암호화 키(비밀문구 아님)
+const NAME_CHECK = "chungah-ok";
+let nameKey = null;
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function deriveKey(pass) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: new TextEncoder().encode("chungah-allergy-names-v1"), iterations: 200000, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+}
+async function encName(s) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, nameKey, new TextEncoder().encode(s));
+  return b64(iv) + ":" + b64(ct);
+}
+async function decName(v) {
+  if (!v || !nameKey) return null;
+  try {
+    const [iv, ct] = v.split(":");
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(iv) }, nameKey, unb64(ct)));
+  } catch (_) { return null; }
+}
+async function loadNameKey() {
+  try {
+    const raw = localStorage.getItem(NAME_KEY_LS);
+    if (raw) nameKey = await crypto.subtle.importKey("raw", unb64(raw), "AES-GCM", true, ["encrypt", "decrypt"]);
+  } catch (_) { nameKey = null; }
+}
+async function getNameCheck() {
+  const { data, error } = await sb.from("app_settings").select("value").eq("key", "name_check").maybeSingle();
+  if (error) throw error;
+  return data ? data.value : null;
+}
+async function renderNameBox() {
+  const box = $("nameBox");
+  if (!box) return;
+  if (nameKey) {
+    box.innerHTML = `<div class="on">🔓 이름 암호 해제됨 <button class="link" onclick="lockNames()">잠그기</button></div>`;
+    return;
+  }
+  let check = null;
+  try { check = await getNameCheck(); }
+  catch (e) { box.innerHTML = `<div class="off" style="color:#c0392b;">이름 설정 조회 실패: ${esc(e.message)}<br>(003_patients.sql 실행 필요)</div>`; return; }
+  box.innerHTML = check
+    ? `<div class="off">🔒 이름을 보려면 병원 비밀문구 입력 (컴퓨터마다 1회)</div>
+       <input type="password" id="namePass" placeholder="병원 비밀문구" onkeydown="if(event.key==='Enter')unlockNames()">
+       <div style="display:flex;gap:6px;"><button class="btn-sm" onclick="unlockNames()">확인</button></div>
+       <div id="nameMsg" class="off"></div>`
+    : `<div class="off">🔒 환자 이름 암호화용 <b>병원 비밀문구</b>를 처음 만듭니다. 잊으면 저장된 이름을 복구할 수 없으니 따로 적어두세요.</div>
+       <input type="password" id="namePass" placeholder="비밀문구 (6자 이상)">
+       <input type="password" id="namePass2" placeholder="비밀문구 확인" onkeydown="if(event.key==='Enter')unlockNames()">
+       <div style="display:flex;gap:6px;"><button class="btn-sm" onclick="unlockNames()">만들기</button></div>
+       <div id="nameMsg" class="off"></div>`;
+}
+async function unlockNames() {
+  const say = m => { $("nameMsg").textContent = m; $("nameMsg").style.color = "#c0392b"; };
+  const p1 = $("namePass").value;
+  if (!p1) return say("비밀문구를 입력하세요.");
+  $("nameMsg").textContent = "확인 중...";
+  try {
+    const check = await getNameCheck();
+    const key = await deriveKey(p1);
+    if (!check) {
+      if (p1.length < 6) return say("6자 이상으로 정해주세요.");
+      if (p1 !== $("namePass2").value) return say("두 번 입력한 비밀문구가 다릅니다.");
+      nameKey = key;
+      const { error } = await sb.from("app_settings").insert({ key: "name_check", value: await encName(NAME_CHECK) });
+      if (error) { nameKey = null; return say("저장 실패: " + error.message); }
+    } else {
+      const prev = nameKey; nameKey = key;
+      if (await decName(check) !== NAME_CHECK) { nameKey = prev; return say("비밀문구가 맞지 않습니다."); }
+    }
+    try { localStorage.setItem(NAME_KEY_LS, b64(await crypto.subtle.exportKey("raw", nameKey))); } catch (_) {}
+    renderNameBox();
+    refreshHistory();
+  } catch (e) { say("오류: " + e.message); }
+}
+function lockNames() {
+  nameKey = null;
+  try { localStorage.removeItem(NAME_KEY_LS); } catch (_) {}
+  renderNameBox();
+}
+async function savePatientName(pid, name) {
+  if (!nameKey || !pid || !name) return false;
+  const { error } = await sb.from("patients").upsert({ chart_no: pid, name_enc: await encName(name) });
+  if (error) { console.warn("이름 저장 실패", error); return false; }
+  return true;
+}
+// 등록번호로 저장된 이름 자동 채움. 이름 칸은 어느 등록번호에 대해 입력됐는지 기억해서,
+// 번호가 바뀌면 지움 (다른 아이 이름이 남아 잘못 저장되는 것 방지)
+let namePid = "";
+async function fillPatientName(pid) {
+  if (namePid && namePid !== pid) { $("pname").value = ""; namePid = ""; }
+  if (!nameKey || !pid) return;
+  const { data } = await sb.from("patients").select("name_enc").eq("chart_no", pid).maybeSingle();
+  const name = data ? await decName(data.name_enc) : null;
+  if (name && pid === $("pid").value.trim() && !$("pname").value) { $("pname").value = name; namePid = pid; }
+}
+
+// Supabase 는 한 번에 1000행까지 → 끝까지 나눠 받기
+async function fetchAll(make) {
+  let out = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await make().range(from, from + 999);
+    if (error) throw error;
+    out = out.concat(data || []);
+    if (!data || data.length < 1000) return out;
+  }
+}
+
+// ── 전체 환자 목록 (등록번호·이름 검색) ──
+let allList = [], allFilter = "전체";
+async function showAllList() {
+  const el = $("report");
+  $("placeholder").style.display = "none";
+  el.style.display = "block";
+  el.innerHTML = '<div style="color:#888;">불러오는 중...</div>';
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  let tests, pats, courses;
+  try {
+    [tests, pats, courses] = await Promise.all([
+      fetchAll(() => sb.from("allergy_tests").select("chart_no,test_date,panel").order("test_date", { ascending: false })),
+      fetchAll(() => sb.from("patients").select("chart_no,name_enc")),
+      fetchAll(() => sb.from("immunotherapy_courses").select("chart_no,drug,start_date,end_date")),
+    ]);
+  } catch (e) { el.innerHTML = `<div class="ai-error">조회 실패: ${esc(e.message)}</div>`; return; }
+  const names = new Map(await Promise.all(pats.map(async p => [p.chart_no, await decName(p.name_enc)])));
+  const encSet = new Set(pats.filter(p => p.name_enc).map(p => p.chart_no));
+  const by = new Map();
+  tests.forEach(t => {   // 최신순으로 받았으므로 처음 본 것이 최근 검사
+    if (!by.has(t.chart_no)) by.set(t.chart_no, { pid: t.chart_no, last: t, n: 0 });
+    by.get(t.chart_no).n++;
+  });
+  courses.forEach(c => { if (!by.has(c.chart_no)) by.set(c.chart_no, { pid: c.chart_no, last: null, n: 0 }); });
+  const today = todayISO();
+  allList = [...by.values()].map(r => {
+    const cur = courses.find(c => c.chart_no === r.pid && !c.end_date);
+    return { ...r, name: names.get(r.pid) || "", hasEnc: encSet.has(r.pid),
+             months: r.last ? monthsSince(r.last.test_date, today) : null, it: cur ? cur.drug : null };
+  }).sort((a, b) => (b.last ? b.last.test_date : "").localeCompare(a.last ? a.last.test_date : ""));
+  el.innerHTML = `
+    <div class="itl-head"><div class="rpt-title">전체 환자 목록</div>
+      <input id="allSearch" class="all-search" placeholder="등록번호 또는 이름 검색" oninput="renderAllRows()">
+      <div class="itl-filters" id="allFilters"></div></div>
+    <table class="rpt-table itl"><thead><tr><th>등록번호</th><th>이름</th><th>최근 검사</th><th>경과</th><th>면역치료</th><th></th></tr></thead>
+    <tbody id="allRows"></tbody></table>
+    <div class="rpt-footer">${nameKey ? "" : "🔒 병원 비밀문구를 입력하지 않아 이름이 보이지 않습니다 (왼쪽 위). "}최근 검사 후 12개월 이상 경과 시 빨간색 표시</div>`;
+  renderAllRows();
+  $("allSearch").focus();
+}
+function renderAllRows(filter) {
+  if (filter) allFilter = filter;
+  const q = norm($("allSearch").value);
+  const F = { "전체": () => true, "1년 이상 경과": r => r.months != null && r.months >= 12, "면역치료 중": r => !!r.it };
+  const match = r => !q || norm(r.pid).includes(q) || norm(r.name).includes(q);
+  $("allFilters").innerHTML = Object.keys(F).map(f =>
+    `<button class="${f === allFilter ? "on" : ""}" onclick="renderAllRows('${f}')">${f} ${allList.filter(r => F[f](r) && match(r)).length}</button>`).join("");
+  const rows = allList.filter(r => F[allFilter](r) && match(r));
+  $("allRows").innerHTML = rows.length ? rows.map(r => `<tr>
+      <td><b>${esc(r.pid)}</b></td>
+      <td>${r.name ? esc(r.name) : `<span class="m">${r.hasEnc ? "🔒" : "—"}</span>`}</td>
+      <td>${r.last ? `${esc(r.last.test_date)}<br><span class="m">${esc(panelLabel(r.last.panel))} · 총 ${r.n}회</span>` : '<span class="m">검사 기록 없음</span>'}</td>
+      <td class="due ${r.months != null && r.months >= 12 ? "bad" : ""}">${r.months != null ? `${r.months}개월` : ""}</td>
+      <td>${r.it ? `<span class="it-chip on">${esc(r.it)}</span>` : '<span class="m">—</span>'}</td>
+      <td><button class="btn-sm ghost" onclick="openPatient('${esc(r.pid)}')">열기</button></td></tr>`).join("")
+    : `<tr><td colspan="6" style="color:#888;text-align:center;padding:16px;">해당 환자 없음</td></tr>`;
+}
+
 function openPatient(pid) {
   $("pid").value = pid;
   $("report").style.display = "none";
@@ -1092,15 +1269,16 @@ async function saveAI(id, html) {
 
 function renderCloudBox() {
   const box = $("cloudBox");
-  $("itListBtn").style.display = cloudReady() ? "" : "none";
+  $("listBtns").style.display = cloudReady() ? "flex" : "none";
   if (!sb) {
     box.innerHTML = `<div class="off">클라우드 미설정 — 기록 저장·이전 검사 비교가 꺼져 있습니다.<br>(index.html 상단 SUPABASE 설정, SETUP.md 참고)</div>`;
     $("localKeyBox").open = true;
     return;
   }
   if (currentUser) {
-    box.innerHTML = `<div class="on">● 로그인됨 · ${esc(currentUser.email)}</div>
-      <div style="display:flex;gap:6px;"><button class="btn-sm ghost" onclick="logout()">로그아웃</button></div>`;
+    box.innerHTML = `<div class="on">● 로그인됨 · ${esc(currentUser.email)} <button class="link" onclick="logout()">로그아웃</button></div>
+      <div id="nameBox" class="cloud-box"></div>`;
+    renderNameBox();
   } else {
     box.innerHTML = `
       <input type="email" id="loginEmail" placeholder="병원 계정 이메일" autocomplete="username">
@@ -1127,6 +1305,7 @@ function scheduleHistory() {
 async function refreshHistory() {
   const box = $("histBox"), pid = $("pid").value.trim();
   refreshIT();
+  if (cloudReady()) fillPatientName(pid).catch(() => {});
   if (!cloudReady() || !pid) { box.classList.remove("show"); box.innerHTML = ""; histCache = []; return; }
   try {
     histCache = await fetchHistory(pid);
@@ -1336,7 +1515,9 @@ async function generate(opts = {}) {
       } else {
         const saved = await saveTest(cur);
         savedId = saved.id;
-        setCloudStatus(`☁ 클라우드에 저장됨 · ${prev ? `이전 검사(${prev.test_date})와 비교` : "첫 검사 기록"}`, "ok");
+        const nameSaved = await savePatientName(pid, pname);
+        setCloudStatus(`☁ 클라우드에 저장됨 · ${prev ? `이전 검사(${prev.test_date})와 비교` : "첫 검사 기록"}${
+          pname && !nameSaved ? " · 이름은 비밀문구 입력 전이라 저장 안 됨" : ""}`, "ok");
         refreshHistory();
       }
     } catch (e) {
@@ -1527,9 +1708,11 @@ function loadApiKey() {
 
 window.addEventListener("DOMContentLoaded", async () => {
   loadApiKey();
+  await loadNameKey();
   onPanelChange();
   $("panel").addEventListener("change", onPanelChange);
   $("pid").addEventListener("input", scheduleHistory);
+  $("pname").addEventListener("input", () => { namePid = $("pid").value.trim(); });
   renderCloudBox();
   if (sb) {
     const { data } = await sb.auth.getSession();
