@@ -523,7 +523,8 @@ const PANELS = {
 };
 const panelLabel = p => (PANELS[p] && PANELS[p].label) || p;
 const HINTS = {
-  MAST: `검사실 보고 형식 그대로:<br>
+  MAST: `검사실 보고 형식 그대로 (첫 줄 날짜·IgE 자동 입력):<br>
+      <code>2025-10-21 mast ige 51</code><br>
       <code>- Class 1 : 느릅나무, 미루나무</code><br>
       <code>- Class 2 : 개암나무, 참나무, ...</code>`,
   sIgE: `항목 + 수치 (쉼표·줄바꿈 구분, 오타 자동 보정):<br>
@@ -691,10 +692,23 @@ function extractMeta(raw) {
     date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
     text = text.replace(dates[0][0], " ");
   }
-  const im = text.match(/(?:^|[\s,;])(?:cap|total|t|총)[\s-]*ige\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/i)
+  const im = text.match(/(?:^|[\s,;])(?:cap|mast|total|t|총)[\s-]*ige\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/i)
           || text.match(/^\s*ige\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/im);
   if (im) { ige = im[1].replace(/\s/g, ""); text = text.replace(im[0], " "); }
-  return { text: text.trim(), date, ige, multiDate: dates.length > 1 };
+  // 함께 적는 다른 검사(비타민D, 갑상선 등)는 항원이 아니므로 빼서 따로 표시
+  const other = [];
+  [/(?:^|[\s,;])(vit\.?\s*d\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
+   /(?:^|[\s,;])(tft\s*(?:wnl|정상|nl|normal)?)/i,
+   /(?:^|[\s,;])(cbc\s*(?:wnl|정상|nl|normal)?)/i,
+   /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i,
+   /(?:^|[\s,;])(wnl)\b/i].forEach(re => {
+    const m = text.match(re);
+    if (m) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
+  });
+  // 날짜 줄에 남은 'mast' / 'cap' 같은 꼬리표 제거 → 검사 종류 힌트로 사용
+  const kind = /(?:^|\s)mast(?:\s|$)/i.test(text) ? "MAST120" : /(?:^|\s)cap(?:\s|$)/i.test(text) ? "sIgE" : null;
+  text = text.replace(/(?:^|\s)(?:mast|cap)(?=\s|$)/gi, " ");
+  return { text: text.trim(), date, ige, other, kind, multiDate: dates.length > 1 };
 }
 
 // 옛 검사 결과 형식 변환: "2  D. pteronyssinus(진드기(Dp))   13.38 3" (순번 이름 수치 Class)
@@ -1360,10 +1374,10 @@ async function generate(opts = {}) {
   const readMeta = [];
   if (meta.date && !opts.stored) { $("testDate").value = meta.date; readMeta.push(`검사일 ${meta.date}`); }
   if (meta.ige && !opts.stored) { $("ige").value = meta.ige; readMeta.push(`Total IgE ${meta.ige}`); }
-  // MAST 형식이 아닌데 MAST가 선택돼 있으면 특이 IgE 로 전환
-  if (!PANELS[$("panel").value].numeric && !parseMast(meta.text).list.length && parseNumeric(meta.text).list.length) {
-    $("panel").value = "sIgE"; onPanelChange();
-  }
+  // 입력 형식에 맞게 검사 종류 자동 선택: "- Class N :" 줄이 있으면 MAST, 항목+숫자면 특이 IgE
+  const looksMast = parseMast(meta.text).list.length > 0;
+  if (looksMast && PANELS[$("panel").value].numeric) { $("panel").value = "MAST120"; onPanelChange(); }
+  else if (!looksMast && !PANELS[$("panel").value].numeric && parseNumeric(meta.text).list.length) { $("panel").value = "sIgE"; onPanelChange(); }
   const pid   = $("pid").value.trim();
   const pname = $("pname").value.trim();
   const ige   = $("ige").value.trim();
@@ -1427,6 +1441,7 @@ async function generate(opts = {}) {
     fixed.length ? `✎ 입력 자동 보정: <b>${fixed.map(esc).join(", ")}</b> — 맞는지 확인하세요.` : "",
     bad.length ? `⚠ 수치를 읽지 못한 입력: <b>${bad.map(esc).join(", ")}</b>` : "",
     readMeta.length ? `📅 입력에서 읽음: <b>${readMeta.map(esc).join(", ")}</b>` : "",
+    meta.other.length ? `ℹ 알레르기 외 검사(보고서에 넣지 않음): <b>${meta.other.map(esc).join(", ")}</b>` : "",
     conv ? `✎ 옛 형식 ${conv.n}줄을 현재 형식으로 변환했습니다 — 항목 이름을 확인하세요.` : "",
     meta.multiDate ? `⚠ 날짜가 여러 개 있습니다. 한 번에 한 검사만 입력하세요 (첫 날짜 사용).` : "",
   ].filter(Boolean).map(t => `<div class="unmatched no-print">${t}</div>`).join("");
