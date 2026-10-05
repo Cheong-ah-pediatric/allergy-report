@@ -693,6 +693,7 @@ function extractMeta(raw) {
     text = text.replace(dates[0][0], " ");
   }
   const im = text.match(/(?:^|[\s,;])(?:cap|mast|total|t|총)[\s-]*ige\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/i)
+          || text.match(/(?:^|[\s,;])(?:mast|cap)\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/i)   // "mast 51" = Total IgE
           || text.match(/^\s*ige\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/im);
   if (im) { ige = im[1].replace(/\s/g, ""); text = text.replace(im[0], " "); }
   // 함께 적는 다른 검사(비타민D, 갑상선 등)는 항원이 아니므로 빼서 따로 표시
@@ -706,7 +707,7 @@ function extractMeta(raw) {
     if (m) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
   });
   // 날짜 줄에 남은 'mast' / 'cap' 같은 꼬리표 제거 → 검사 종류 힌트로 사용
-  const kind = /(?:^|\s)mast(?:\s|$)/i.test(text) ? "MAST120" : /(?:^|\s)cap(?:\s|$)/i.test(text) ? "sIgE" : null;
+  const kind = /(?:^|\s)mast\b/i.test(raw) ? "MAST120" : /(?:^|\s)cap\b/i.test(raw) ? "sIgE" : null;
   text = text.replace(/(?:^|\s)(?:mast|cap)(?=\s|$)/gi, " ");
   return { text: text.trim(), date, ige, other, kind, multiDate: dates.length > 1 };
 }
