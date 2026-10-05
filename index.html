@@ -663,8 +663,10 @@ function parseNumeric(raw) {
   return { list: out, bad };
 }
 function buildEntries(panel, raw) {
-  const numeric = PANELS[panel].numeric;
-  const { list, bad } = numeric ? parseNumeric(raw) : parseMast(raw);
+  // 형식으로 파싱: "- Class N : 이름, 이름" 줄이 있으면 그 형식, 아니면 "이름 수치/Class" 형식
+  const mast = parseMast(raw);
+  const numeric = !mast.list.length;
+  const { list, bad } = numeric ? parseNumeric(raw) : mast;
   const entries = list.map(x => {
     const r = resolveName(x.name);
     if (r && r.type === "marker")
@@ -699,13 +701,12 @@ function extractMeta(raw) {
   // 함께 적는 다른 검사(비타민D, 갑상선 등)는 항원이 아니므로 빼서 따로 표시
   const other = [];
   [/(?:^|[\s,;])(vit\.?\s*d\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
-   /(?:^|[\s,;])(tft\s*(?:wnl|정상|nl|normal)?)/i,
-   /(?:^|[\s,;])(cbc\s*(?:wnl|정상|nl|normal)?)/i,
-   /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i,
-   /(?:^|[\s,;])(wnl)\b/i].forEach(re => {
+   /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i].forEach(re => {
     const m = text.match(re);
     if (m) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
   });
+  // "TFT WNL", "IDA WNL", "CBC 정상" 처럼 검사명 + 정상 표기
+  text = text.replace(/(^|[\s,;])([a-z가-힣][a-z가-힣0-9]*\s*(?:wnl|정상|normal|nl))(?=[\s,;]|$)/gim, (_, pre, m) => { other.push(m.trim()); return pre + " "; });
   // 날짜 줄에 남은 'mast' / 'cap' 같은 꼬리표 제거 → 검사 종류 힌트로 사용
   const kind = /(?:^|\s)mast\b/i.test(raw) ? "MAST120" : /(?:^|\s)cap\b/i.test(raw) ? "sIgE" : null;
   text = text.replace(/(?:^|\s)(?:mast|cap)(?=\s|$)/gi, " ");
@@ -1375,10 +1376,10 @@ async function generate(opts = {}) {
   const readMeta = [];
   if (meta.date && !opts.stored) { $("testDate").value = meta.date; readMeta.push(`검사일 ${meta.date}`); }
   if (meta.ige && !opts.stored) { $("ige").value = meta.ige; readMeta.push(`Total IgE ${meta.ige}`); }
-  // 입력 형식에 맞게 검사 종류 자동 선택: "- Class N :" 줄이 있으면 MAST, 항목+숫자면 특이 IgE
+  // 검사 종류 자동 선택: 첫 줄에 mast / cap 이 있으면 그대로, 없으면 입력 형식으로 ("- Class N :" → MAST)
   const looksMast = parseMast(meta.text).list.length > 0;
-  if (looksMast && PANELS[$("panel").value].numeric) { $("panel").value = "MAST120"; onPanelChange(); }
-  else if (!looksMast && !PANELS[$("panel").value].numeric && parseNumeric(meta.text).list.length) { $("panel").value = "sIgE"; onPanelChange(); }
+  const want = meta.kind || (looksMast ? "MAST120" : parseNumeric(meta.text).list.length ? "sIgE" : null);
+  if (want && $("panel").value !== want && !($("panel").value === "기타" && !meta.kind)) { $("panel").value = want; onPanelChange(); }
   const pid   = $("pid").value.trim();
   const pname = $("pname").value.trim();
   const ige   = $("ige").value.trim();
