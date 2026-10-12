@@ -661,7 +661,7 @@ function parseNumeric(raw) {
   const out = [], bad = [];
   raw.split(/[\n,;，、]+/).forEach(chunk => {
     const c = chunk.replace(/k?ua?\s*\/\s*l|iu\s*\/\s*ml|mg\s*\/\s*l|[uμ]g\s*\/\s*ml/gi, " ")
-      .replace(/\s*(?:neg(?:ative)?|\(\s*-\s*\)|음성)(?=[\s,;]|$)/gi, " 0");   // "muc neg", "dp(-)" → Class 0
+      .replace(/\s*(?:neg(?:ative)?|\(\s*[-_]\s*\)|음성)(?=[\s,;]|$)/gi, " 0");   // "muc neg", "dp(-)", "흰자(_)" → Class 0
     // 이름 [:=] [부등호] 숫자 [(class N)]
     const re = /([a-z가-힣][a-z가-힣().\-\s]*?)\s*[:=]?\s*(<=?|>=?|≥|≤)?\s*(\d+(?:\.\d+)?)(?:\s*\(?\s*class\s*([0-6])\s*\)?)?/gi;
     let m, any = false;
@@ -782,8 +782,8 @@ function splitBlocks(raw) {
   return blocks;
 }
 // "all neg", "all (-)", "모두 음성" 또는 결과 자리에 "(-)" / "neg" / "음성"만 = 검사 항목 전부 음성
-const ALL_NEG_RE = /(?:^|[\s,;])(all\s*(?:neg(?:ative)?|\(\s*-\s*\)|음성)|(?:전부|모두|전체)\s*음성)(?=[\s,;]|$)/i;
-const NEG_ONLY_RE = /^\s*(?:neg(?:ative)?|\(\s*-\s*\)|음성|-)\s*$/i;
+const ALL_NEG_RE = /(?:^|[\s,;])(all\s*(?:neg(?:ative)?|\(\s*[-_]\s*\)|음성)|(?:전부|모두|전체)\s*음성)(?=[\s,;]|$)/i;
+const NEG_ONLY_RE = /^\s*(?:neg(?:ative)?|\(\s*[-_]\s*\)|음성|[-_])\s*$/i;
 function parseBlock(text, fallbackPanel, fallbackDate) {
   const conv = convertLegacy(text);
   if (conv) text = conv.text;
