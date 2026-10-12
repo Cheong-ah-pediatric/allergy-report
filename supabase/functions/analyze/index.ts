@@ -4,6 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const MODEL = "claude-haiku-4-5-20251001";
+const MAX_TOKENS = 16000;   // 보고서 항목이 늘어도 잘리지 않게 (예전 4000에서 끝부분 잘림)
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
   if (staffErr || !ok) return json({ error: "권한 없음 (staff 목록에 없는 계정)" }, 403);
 
   const { prompt } = await req.json().catch(() => ({}));
-  if (typeof prompt !== "string" || !prompt || prompt.length > 30000) return json({ error: "잘못된 요청" }, 400);
+  if (typeof prompt !== "string" || !prompt || prompt.length > 200000) return json({ error: "잘못된 요청" }, 400);
 
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -35,10 +36,10 @@ Deno.serve(async (req) => {
       "x-api-key": (Deno.env.get("ANTHROPIC_API_KEY") ?? "").trim().replace(/^["']|["']$/g, ""),
       "anthropic-version": "2023-06-01",
     },
-    body: JSON.stringify({ model: MODEL, max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, messages: [{ role: "user", content: prompt }] }),
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) return json({ error: data?.error?.message ?? `Anthropic HTTP ${r.status}` }, 502);
   const text = (data.content ?? []).map((b: { text?: string }) => b.text ?? "").join("");
-  return json({ text });
+  return json({ text, stop_reason: data.stop_reason ?? null });
 });

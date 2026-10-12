@@ -490,6 +490,7 @@ const ALLERGY_DB = [{"항목명": "집먼지진드기(Dp)", "분류": "진드기
 const SUPABASE_URL      = "https://ignbyjkoqijirnycmcyt.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbmJ5amtvcWlqaXJueWNtY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MzA2NTUsImV4cCI6MjEwNjQwNjY1NX0.3VGnkDTJXUb3rZwcp0p95oRZj1d3UNQfF7ShcPZCoHQ";
 const AI_MODEL = "claude-haiku-4-5-20251001";
+const AI_MAX_TOKENS = 16000;   // 서버 함수(analyze)와 같은 값
 
 const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -1780,10 +1781,11 @@ Class 3 이상 항원 위주로 왜 중요한지 설명
 ${d}`).join("")}`;
 
   try {
-    let text = await callAI(prompt);
+    let { text, truncated } = await callAI(prompt);
     // 코드블록 래퍼 제거 (```html ... ``` 또는 ``` ... ```)
     text = text.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
     text = sanitizeAI(text);
+    if (truncated) text += '<div class="ai-error">⚠ 분석이 너무 길어 끝부분이 잘렸습니다. "AI 재분석"을 눌러 다시 시도해 주세요.</div>';
     aiBody.className = "ai-body";
     aiBody.innerHTML = text;
     $("aiRetry").style.display = "";
@@ -1807,7 +1809,7 @@ async function callAI(prompt) {
       try { const j = await error.context.json(); msg = j.error || msg; } catch (_) {}
       throw new Error(msg);
     }
-    return data.text || "";
+    return { text: data.text || "", truncated: data.stop_reason === "max_tokens" };
   }
   // ASCII 범위 문자만 허용 (비ASCII 문자 제거)
   const apiKey = $("apiKey").value.trim().replace(/[^ -~]/g, "");
@@ -1820,14 +1822,14 @@ async function callAI(prompt) {
       "anthropic-version": "2023-06-01",
       "anthropic-dangerous-direct-browser-access": "true"
     },
-    body: JSON.stringify({ model: AI_MODEL, max_tokens: 4000, messages: [{ role: "user", content: prompt }] })
+    body: JSON.stringify({ model: AI_MODEL, max_tokens: AI_MAX_TOKENS, messages: [{ role: "user", content: prompt }] })
   });
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
     throw new Error(errData?.error?.message || "HTTP " + response.status);
   }
   const data = await response.json();
-  return data.content.map(b => b.text || "").join("");
+  return { text: data.content.map(b => b.text || "").join(""), truncated: data.stop_reason === "max_tokens" };
 }
 
 function saveApiKey() {
