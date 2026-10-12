@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, messages: [{ role: "user", content: prompt }] }),
   });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) return json({ error: data?.error?.message ?? `Anthropic HTTP ${r.status}` }, 502);
+  if (!r.ok) return json({ error: data?.error?.message ?? "Anthropic HTTP " + r.status }, 502);
   const text = (data.content ?? []).map((b: { text?: string }) => b.text ?? "").join("");
   return json({ text, stop_reason: data.stop_reason ?? null });
 });
