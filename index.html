@@ -325,7 +325,7 @@ textarea:focus{border-color:var(--accent);background:#fff;}
 
 @media print {
   .no-print{display:none!important;}
-  .cmp-head,.cmp-table th,.cb.c0,.risk-badge,.food-note{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .cmp-head,.cmp-table th,.cb.c0,.risk-badge,.food-note,.chol-note{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .cmp-section{page-break-inside:avoid;}
 }
 
@@ -346,6 +346,7 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
 .tr-panel{font-weight:400;font-size:8.5px;opacity:.8;} .tr-skip{font-weight:400;font-size:8.5px;color:#999;}
 .tr-ige td{font-weight:600;color:var(--accent);font-size:10.5px;}
 .tr-dir{font-weight:700;font-size:10px;} .tr-dir.up{color:#c0392b;} .tr-dir.down{color:#27ae60;}
+.chol-note{background:#eef6fd;border:1px solid #bcd8f0;color:#1f4e79;border-radius:5px;padding:7px 10px;font-size:11px;margin-bottom:10px;}
 .neg-line{font-size:10.5px;color:#777;margin:-4px 0 10px;}
 .it-box{display:none;flex-direction:column;gap:5px;background:#f6f3fc;border:1px solid #e0d8f2;border-radius:6px;padding:8px 9px;font-size:11px;}
 .it-title{font-weight:700;color:#4a3c78;font-size:11.5px;}
@@ -659,7 +660,8 @@ const OPS = { "<": "<", "<=": "≤", "≤": "≤", ">": ">", ">=": "≥", "≥":
 function parseNumeric(raw) {
   const out = [], bad = [];
   raw.split(/[\n,;，、]+/).forEach(chunk => {
-    const c = chunk.replace(/k?ua?\s*\/\s*l|iu\s*\/\s*ml|mg\s*\/\s*l|[uμ]g\s*\/\s*ml/gi, " ");
+    const c = chunk.replace(/k?ua?\s*\/\s*l|iu\s*\/\s*ml|mg\s*\/\s*l|[uμ]g\s*\/\s*ml/gi, " ")
+      .replace(/\s*(?:neg(?:ative)?|\(\s*-\s*\)|음성)(?=[\s,;]|$)/gi, " 0");   // "muc neg", "dp(-)" → Class 0
     // 이름 [:=] [부등호] 숫자 [(class N)]
     const re = /([a-z가-힣][a-z가-힣().\-\s]*?)\s*[:=]?\s*(<=?|>=?|≥|≤)?\s*(\d+(?:\.\d+)?)(?:\s*\(?\s*class\s*([0-6])\s*\)?)?/gi;
     let m, any = false;
@@ -711,9 +713,9 @@ function extractMeta(raw) {
   // 함께 적는 다른 검사(비타민D, 갑상선 등)는 항원이 아니므로 빼서 따로 표시
   const other = [];
   [/(?:^|[\s,;])(vit\.?\s*d\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
-   /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i].forEach(re => {
-    const m = text.match(re);
-    if (m) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
+   /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i,
+   /(?:^|[\s,;])((?:iron|fe|ferritin|hb|hgb|crp|esr|tsh)\s*[:=]?\s*\d+(?:\.\d+)?)/i].forEach(re => {
+    for (let m; (m = text.match(re)); ) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
   });
   // "TFT WNL", "IDA WNL", "CBC 정상" 처럼 검사명 + 정상 표기
   text = text.replace(/(^|[\s,;])([a-z가-힣][a-z가-힣0-9]*\s*(?:wnl|정상|normal|nl))(?=[\s,;]|$)/gim, (_, pre, m) => { other.push(m.trim()); return pre + " "; });
@@ -761,6 +763,8 @@ const valStr = e => e.value == null ? "" : `${e.op || ""}${e.value}`;
 //  - 이전 검사 비교는 직전만이 아니라 저장된 모든 방문을 날짜순으로 (코드로 계산, AI 는 해석만)
 // ════════════════════════════════════════
 const dayDiff = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+// 콜린성 두드러기 안내 기준: Total IgE 이 값 이상 + 모든 항원 Class 2 이하
+const CHOLINERGIC_IGE = 30;
 const PANEL_SHORT = { MAST120: "MAST", sIgE: "CAP", 기타: "기타" };
 const panelShort = p => PANEL_SHORT[p] || p;
 const isNumericPanel = p => !!(PANELS[p] && PANELS[p].numeric);
@@ -777,17 +781,27 @@ function splitBlocks(raw) {
   if (cur.some(x => x.trim())) blocks.push(cur.join("\n"));
   return blocks;
 }
+// "all neg", "all (-)", "모두 음성" 또는 결과 자리에 "(-)" / "neg" / "음성"만 = 검사 항목 전부 음성
+const ALL_NEG_RE = /(?:^|[\s,;])(all\s*(?:neg(?:ative)?|\(\s*-\s*\)|음성)|(?:전부|모두|전체)\s*음성)(?=[\s,;]|$)/i;
+const NEG_ONLY_RE = /^\s*(?:neg(?:ative)?|\(\s*-\s*\)|음성|-)\s*$/i;
 function parseBlock(text, fallbackPanel, fallbackDate) {
   const conv = convertLegacy(text);
   if (conv) text = conv.text;
   const meta = extractMeta(text.trim());
+  let allNeg = false;
+  const an = meta.text.match(ALL_NEG_RE);
+  if (an) { allNeg = true; meta.text = meta.text.replace(an[1], " ").trim(); }
+  else if (NEG_ONLY_RE.test(meta.text)) { allNeg = true; meta.text = ""; }
   const looksMast = parseMast(meta.text).list.length > 0;
   const panel = meta.kind
     || (fallbackPanel === "기타" ? "기타"
+    : allNeg ? "MAST120"
     : conv ? "sIgE" : looksMast ? "MAST120" : parseNumeric(meta.text).list.length ? "sIgE" : fallbackPanel);
-  const { entries, bad } = buildEntries(panel, meta.text);
-  return { raw: text.trim(), meta, conv, panel, date: meta.date || fallbackDate, ige: meta.ige, entries, bad };
+  const { entries, bad } = meta.text ? buildEntries(panel, meta.text) : { entries: [], bad: [] };
+  return { raw: text.trim(), meta, conv, panel, date: meta.date || fallbackDate, ige: meta.ige, entries, bad, allNeg };
 }
+// 저장된 검사가 '전부 음성'이었는지 (양성 결과 없이 저장된 검사)
+const isAllNegTest = t => !(t.results || []).some(r => (r.kind || "IgE") === "IgE" && r.cls > 0);
 // 저장된 원문에 날짜 줄이 없으면 붙여서 다시 입력할 수 있게
 function rawWithHead(t) {
   const raw = t.raw_input || "";
@@ -1444,7 +1458,7 @@ async function generate(opts = {}) {
   const blocks = splitBlocks(rawAll).map(t => parseBlock(t, $("panel").value, fieldDate));
   if (blocks.some(b => b.conv)) $("rawInput").value = blocks.map(b => b.raw).join("\n\n");
   if (blocks.length === 1 && !blocks[0].ige && $("ige").value.trim()) blocks[0].ige = $("ige").value.trim();
-  const empty = blocks.filter(b => !b.entries.length);
+  const empty = blocks.filter(b => !b.entries.length && !b.allNeg);
   if (empty.length) {
     errEl.textContent = `형식 오류 (${empty.map(b => b.raw.split("\n")[0].slice(0, 25)).join(", ")}): "- Class 1 : 항원명, 항원명" 또는 "dp 5, df 6" 형식으로 입력하세요.`;
     errEl.style.display = "block"; return;
@@ -1530,7 +1544,12 @@ async function generate(opts = {}) {
       }
     });
   });
-  if (!rows) rows = `<tr><td colspan="6" style="text-align:center;color:#888;padding:12px;">양성(Class 1 이상) 항목 없음</td></tr>`;
+  const allNegTests = visit.tests.filter(t => t.panel === "MAST120" && isAllNegTest(t));
+  if (!rows) rows = `<tr><td colspan="6" style="text-align:center;color:#555;padding:12px;">${allNegTests.length
+    ? `<b>모든 항원 음성</b> (${allNegTests.map(t => `${esc(panelLabel(t.panel))}`).join(", ")}) — 검사한 알레르기 항원 중 반응을 보인 항원이 없습니다.`
+    : "양성(Class 1 이상) 항목 없음"}</td></tr>`;
+  const igeMax = Math.max(0, ...visit.m.iges.map(x => igeNum(x.v) || 0));
+  const cholinergic = igeMax >= CHOLINERGIC_IGE && pos.every(e => e.cls <= 2);
 
   const readMeta = blocks.filter(b => b.meta.date || b.meta.ige)
     .map(b => `${b.meta.date ? b.date : ""} ${panelShort(b.panel)}${b.meta.ige ? ` IgE ${b.meta.ige}` : ""}`.trim());
@@ -1568,6 +1587,7 @@ async function generate(opts = {}) {
       </div>
     </div>
     <div class="summary">총 <strong>${pos.length}개</strong> 항원 양성${multi ? ` · ${esc(visitPanels(visit))} 함께 분석` : ""}${iggE.length ? ` · IgG ${iggE.length}개` : ""} · Class가 높을수록 반응 강도가 강합니다</div>
+    ${cholinergic ? `<div class="chol-note">💧 Total IgE가 ${esc(igeMax)} IU/mL로 ${CHOLINERGIC_IGE} 이상이지만 뚜렷하게 높은 항원이 없습니다. 운동·더위·목욕·긴장으로 땀이 날 때 작은 두드러기가 생긴다면 <b>콜린성 두드러기</b>일 수 있으니 진료 시 말씀해 주세요.</div>` : ""}
     ${hasFood ? `<div class="food-note">🍽 식품 항목의 양성은 <b>'감작'</b>으로, 실제로 먹었을 때 반응하는 '알레르기'와 다를 수 있습니다. <b>이미 먹고 증상이 없던 음식은 끊지 마시고</b>, 식이 제한은 담당 의사와 상의해 결정하세요.</div>` : ""}
     <table class="rpt-table">
       <thead>
@@ -1643,7 +1663,7 @@ async function generate(opts = {}) {
   if (showIT) $("itSlot").innerHTML = renderITSection(courses, trendIT);
 
   const ai = {
-    visit, numeric, multi, pos, neg,
+    visit, numeric, multi, pos, neg, cholinergic, igeMax, allNeg: allNegTests.length > 0,
     trend: upto.length > 1 ? trendText(upto) : null, nVisits: upto.length,
     it: showIT ? itText(courses, trendIT) : (iggE.length ? `- 면역치료 기록 없음\n- 이번 IgG: ${iggE.map(e => `${e.canon} ${valStr(e)} mg/L`).join(", ")}` : null),
     onIT: courses.some(c => !c.end_date),
@@ -1664,7 +1684,7 @@ async function generate(opts = {}) {
   }
 }
 
-async function runAIAnalysis({ visit, numeric, multi, pos, neg, trend, nVisits, it, onIT }) {
+async function runAIAnalysis({ visit, numeric, multi, pos, neg, cholinergic, igeMax, allNeg, trend, nVisits, it, onIT }) {
   const aiBody = $("aiBody");
   $("aiRetry").style.display = "none";
   aiBody.className = "ai-body loading";
@@ -1700,7 +1720,9 @@ async function runAIAnalysis({ visit, numeric, multi, pos, neg, trend, nVisits, 
 - ${onIT
       ? "이 환아는 현재 설하면역치료 중임. 5번에서 치료를 새로 권고하지 말고, 꾸준한 복용의 중요성과 다음 추적 검사 시기를 안내할 것."
       : "집먼지진드기(Dp/Df) 양성 시에만: 설하면역치료는 집먼지진드기 알레르기의 근본적 치료법으로 3~5년 복용 시 알레르기 반응 자체를 줄여주며 소아 천식 예방 효과도 있음을 안내하고, 본원 처방 가능함을 언급할 것."}
-- Total IgE가 60 IU/mL 이상으로 elevated되어 있으나 모든 항원이 Class 2 이하로 낮은 경우, 5번 항목에서 콜린성두드러기(운동, 열, 땀 등 자극에 의한 두드러기) 가능성을 고려해야 함을 언급할 것. 단, IgE가 60 미만이거나 Class 3 이상 항원이 있는 경우, 또는 Total IgE가 없는 경우에는 콜린성두드러기 언급 금지.
+- 콜린성두드러기: ${cholinergic
+      ? `해당함 (Total IgE ${igeMax} IU/mL로 ${CHOLINERGIC_IGE} 이상이고 모든 항원이 Class 2 이하). 5번 항목에서 운동·더위·목욕·긴장 등으로 땀이 날 때 생기는 콜린성두드러기 가능성을 고려해야 함을 언급할 것.`
+      : "해당하지 않음. 콜린성두드러기 언급 금지."}
 - 식품 항원 양성은 '감작'이며 실제로 먹었을 때의 알레르기와 다를 수 있음. 이미 먹고 증상이 없던 식품은 계속 먹어도 된다는 원칙을 4번에 포함하고, 검사 결과만으로 불필요한 식이 제한을 권하지 말 것.
 - 계란 성분 해석: 난백점소(오보뮤코이드)는 열에 강해 양성이면 충분히 가열한 계란에도 반응할 수 있고 알레르기가 오래갈 가능성을 시사함. 오보뮤코이드가 음성이고 난백알부민(오브알부민) 위주로 양성이면 충분히 가열한 계란(베이킹 제품 등)은 먹을 수 있는 경우가 많음. 섭취 시도는 반드시 의사 지도하에 하도록 안내.
 - 계란 알레르기가 있어도 독감 등 예방접종은 접종 가능함. 백신 회피를 권하지 말 것.
@@ -1711,7 +1733,7 @@ async function runAIAnalysis({ visit, numeric, multi, pos, neg, trend, nVisits, 
 ${multi ? `같은 시기(${visitDate(visit)})에 시행한 MAST와 특이 IgE(CAP) 검사를 하나의 검사로 합친 결과입니다. 같은 항원을 두 방법으로 측정했으면 특이 IgE 결과를 대표로 하고 MAST 결과를 괄호에 함께 적음 — 두 방법은 측정법이 달라 Class가 다를 수 있으니 하나의 결과로 종합해 해석할 것. 수치 단위 kU/L.` : numeric ? "특이 IgE(개별 항목) 알레르기 검사 결과입니다. 수치 단위 kU/L." : "MAST 알레르기 검사 결과입니다."}${ige ? ` Total IgE: ${ige} (기준: 100 IU/mL 미만 정상).` : ""}
 
 [검사 결과]
-${lines.join("\n") || "(양성 항목 없음)"}
+${lines.join("\n") || (allNeg ? "MAST 검사 결과 모든 항원 음성 (양성 항원 없음). 알레르기 감작이 확인되지 않았다는 의미로 설명하고, 2~4번은 짧게 일반적인 내용만 쓸 것." : "(양성 항목 없음)")}
 
 [항원 상세]
 ${detailLines || "(없음)"}
