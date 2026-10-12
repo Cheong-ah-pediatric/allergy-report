@@ -721,7 +721,7 @@ function extractMeta(raw) {
   const other = [];
   [/(?:^|[\s,;])(vit\.?\s*d\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
    /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i,
-   /(?:^|[\s,;])((?:iron|fe|ferritin|hb|hgb|crp|esr|tsh)\s*[:=]?\s*\d+(?:\.\d+)?)/i].forEach(re => {
+   /(?:^|[\s,;])((?:iron|ferritin|ferr|fe|철분|페리틴|hb|hgb|crp|esr|tsh)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i].forEach(re => {
     for (let m; (m = text.match(re)); ) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
   });
   // "TFT WNL", "IDA WNL", "CBC 정상" 처럼 검사명 + 정상 표기
