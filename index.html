@@ -574,6 +574,7 @@ const EXTRA_ALIAS = {
   "집먼지진드기(Dp)": ["dpige", "dpe", "진드기dp"],
   "집먼지진드기(Df)": ["dfige", "dfe", "진드기df"],
   "저장진드기": ["tyrophagusputrescentiae", "tyrophagus"],
+  "저장진드기(T)": ["저장진드기tp", "저장진드기(tp)"],
   "알터나리아": ["alternariaalternata"],
   "꿀벌": ["honeybee"],
   "a-lactoalbumin": ["alac", "alact", "alpha-lac", "alphalac", "ala", "알파락트", "알파락트알부민"],
@@ -721,6 +722,7 @@ function extractMeta(raw) {
   const other = [];
   [/(?:^|[\s,;])(vit\.?\s*d\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
    /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i,
+   /(?:^|[\s,;/])((?:s-?)?myco\w*\s*[:=]?\s*\d+\s*x?)/i,
    /(?:^|[\s,;])((?:iron|ferritin|ferr|fe|철분|페리틴|hb|hgb|crp|esr|tsh)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i].forEach(re => {
     for (let m; (m = text.match(re)); ) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
   });
@@ -784,8 +786,11 @@ const PANEL_HEAD_RE = /^\s*(?:cap|mast)\b/i;
 function splitBlocks(raw) {
   const blocks = [];
   let cur = [];
+  // 날짜(+cap/mast)만 있는 줄 = 다음 줄의 머리말 → 바로 이어지는 cap/mast 줄과 같은 검사
+  const headOnly = () => cur.filter(x => x.trim()).every(x => /^\s*(20\d{2})[-./]\d{1,2}[-./]\d{1,2}\s*(?:cap|mast)?\s*$/i.test(x));
   raw.split("\n").forEach(l => {
-    if ((DATE_RE.test(l) || PANEL_HEAD_RE.test(l)) && cur.some(x => x.trim())) { blocks.push(cur.join("\n")); cur = []; }
+    const starts = DATE_RE.test(l) || (PANEL_HEAD_RE.test(l) && !headOnly());
+    if (starts && cur.some(x => x.trim())) { blocks.push(cur.join("\n")); cur = []; }
     cur.push(l);
   });
   if (cur.some(x => x.trim())) blocks.push(cur.join("\n"));
@@ -814,9 +819,12 @@ function parseBlock(text, fallbackPanel, fallbackDate) {
 const isAllNegTest = t => !(t.results || []).some(r => (r.kind || "IgE") === "IgE" && r.cls > 0);
 // 저장된 원문에 날짜 줄이 없으면 붙여서 다시 입력할 수 있게
 function rawWithHead(t) {
-  const raw = t.raw_input || "";
-  return DATE_RE.test(raw) ? raw
-    : `${t.test_date} ${t.panel === "sIgE" ? "cap" : "mast"}${t.total_ige ? " ige " + t.total_ige : ""}\n${raw}`;
+  const raw = (t.raw_input || "").trim();
+  if (DATE_RE.test(raw)) return raw;
+  const ige = t.total_ige && !/\bige\b|\b(?:cap|mast)\s+\d/i.test(raw) ? " ige " + t.total_ige : "";
+  // 이미 "cap ..." / "mast ..." 로 시작하면 그 줄 앞에 날짜만 붙임 (줄을 따로 만들면 빈 검사가 생김)
+  if (PANEL_HEAD_RE.test(raw)) return raw.replace(/^\s*(cap|mast)\b/i, (m, k) => `${t.test_date} ${k}${ige}`);
+  return `${t.test_date} ${t.panel === "sIgE" ? "cap" : "mast"}${ige}\n${raw}`;
 }
 
 // 날짜가 1일 이내로 이어지는 검사를 한 방문으로
