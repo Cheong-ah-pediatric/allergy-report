@@ -852,9 +852,9 @@ function parseBlock(text, fallbackPanel, fallbackDate) {
 // 저장된 검사가 '전부 음성'이었는지 (양성 결과 없이 저장된 검사)
 const isAllNegTest = t => !(t.results || []).some(r => (r.kind || "IgE") === "IgE" && r.cls > 0);
 // 저장된 원문에 날짜 줄이 없으면 붙여서 다시 입력할 수 있게
-// 임상 참고사항: 참고칸 내용 + 결과 입력란의 "참고:", "메모:", "임상:", "※" 로 시작하는 줄
+// 임상 참고사항: 참고칸 내용 + 결과 입력란의 "참고:", "메모:", "임상:", "#" 로 시작하는 줄 (원장님 지시 11/12: ※ 대신 #)
 // 저장은 그 검사의 원문(raw_input) 끝에 "참고: ..." 줄로 → 불러오면 다시 참고칸으로
-const NOTE_LINE_RE = /^\s*(?:참고|메모|임상|note|hx)\s*[:：)]\s*|^\s*※\s*/i;
+const NOTE_LINE_RE = /^\s*(?:참고|메모|임상|note|hx)\s*[:：)]\s*|^\s*#\s*/i;
 function splitNotes(text) {
   const notes = [], rest = [];
   String(text || "").split("\n").forEach(l => (NOTE_LINE_RE.test(l) ? notes.push(l.replace(NOTE_LINE_RE, "").trim()) : rest.push(l)));
