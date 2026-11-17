@@ -347,6 +347,9 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
 .tr-ige td{font-weight:600;color:var(--accent);font-size:10.5px;}
 .tr-dir{font-weight:700;font-size:10px;} .tr-dir.up{color:#c0392b;} .tr-dir.down{color:#27ae60;}
 .chol-note{background:#eef6fd;border:1px solid #bcd8f0;color:#1f4e79;border-radius:5px;padding:7px 10px;font-size:11px;margin-bottom:10px;}
+.imp-btn{display:block;margin:14px auto 0;padding:3px 10px;font-size:10px;color:#888;background:transparent;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-family:inherit;}
+.imp-btn:hover{color:var(--accent);border-color:var(--accent);}
+@media print{.imp-btn{display:none !important;}}
 .imp-help{font-size:12px;color:#555;background:#f6f8fc;border:1px solid #e0e4ec;border-radius:6px;padding:8px 10px;margin:6px 0 10px;line-height:1.6;}
 .imp-row{margin:6px 0;font-size:13px;}
 .imp-row select{margin-left:6px;max-width:260px;}
@@ -415,7 +418,6 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
       <button class="btn-sm ghost" onclick="showAllList()">👥 전체 환자 목록</button>
       <button id="itListBtn" class="btn-sm ghost" onclick="showITList()">💊 면역치료 환자</button>
     </div>
-    <button id="importBtn" class="btn-sm ghost" style="display:none;margin-top:6px;width:100%;" onclick="showImport()">📥 특이증상 엑셀 일괄 업로드</button>
 
     <details id="localKeyBox" class="local-key">
       <summary>로컬 API 키 (클라우드 미사용 시)</summary>
@@ -475,6 +477,7 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
     <div class="err" id="errMsg"></div>
     <button class="btn-gen" onclick="generate()">보고서 생성</button>
     <button class="btn-print" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
+    <button id="importBtn" class="imp-btn" style="display:none;" onclick="showImport()">📥 엑셀 일괄 업로드</button>
   </div>
 
   <!-- 결과 패널 -->
