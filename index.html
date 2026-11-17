@@ -347,6 +347,12 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
 .tr-ige td{font-weight:600;color:var(--accent);font-size:10.5px;}
 .tr-dir{font-weight:700;font-size:10px;} .tr-dir.up{color:#c0392b;} .tr-dir.down{color:#27ae60;}
 .chol-note{background:#eef6fd;border:1px solid #bcd8f0;color:#1f4e79;border-radius:5px;padding:7px 10px;font-size:11px;margin-bottom:10px;}
+.imp-help{font-size:12px;color:#555;background:#f6f8fc;border:1px solid #e0e4ec;border-radius:6px;padding:8px 10px;margin:6px 0 10px;line-height:1.6;}
+.imp-row{margin:6px 0;font-size:13px;}
+.imp-row select{margin-left:6px;max-width:260px;}
+.imp-sum{margin:10px 0;padding:8px 10px;background:#eef6ee;border-radius:6px;font-size:13px;line-height:1.7;}
+.imp-tbl{border-collapse:collapse;font-size:11px;margin:6px 0;width:100%;}
+.imp-tbl td,.imp-tbl th{border:1px solid #e0e4ec;padding:3px 6px;text-align:left;}
 .clin-note{min-height:60px;}
 .neg-line{font-size:10.5px;color:#777;margin:-4px 0 10px;}
 .it-box{display:none;flex-direction:column;gap:5px;background:#f6f3fc;border:1px solid #e0d8f2;border-radius:6px;padding:8px 9px;font-size:11px;}
@@ -405,6 +411,7 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
       <button class="btn-sm ghost" onclick="showAllList()">👥 전체 환자 목록</button>
       <button id="itListBtn" class="btn-sm ghost" onclick="showITList()">💊 면역치료 환자</button>
     </div>
+    <button id="importBtn" class="btn-sm ghost" style="display:none;margin-top:6px;width:100%;" onclick="showImport()">📥 특이증상 엑셀 일괄 업로드</button>
 
     <details id="localKeyBox" class="local-key">
       <summary>로컬 API 키 (클라우드 미사용 시)</summary>
@@ -1368,7 +1375,9 @@ async function showAllList() {
     if (!by.has(t.chart_no)) by.set(t.chart_no, { pid: t.chart_no, last: t, n: 0 });
     by.get(t.chart_no).n++;
   });
-  by.forEach(r => { r.n = groupVisits(tests.filter(t => t.chart_no === r.pid)).length; });
+  const testsBy = new Map();
+  tests.forEach(t => { if (!testsBy.has(t.chart_no)) testsBy.set(t.chart_no, []); testsBy.get(t.chart_no).push(t); });
+  by.forEach(r => { r.n = groupVisits(testsBy.get(r.pid) || []).length; });
   courses.forEach(c => { if (!by.has(c.chart_no)) by.set(c.chart_no, { pid: c.chart_no, last: null, n: 0 }); });
   const today = todayISO();
   allList = [...by.values()].map(r => {
@@ -1436,7 +1445,7 @@ async function saveAI(ids, html) {
 
 function renderCloudBox() {
   const box = $("cloudBox");
-  $("listBtns").style.display = cloudReady() ? "flex" : "none";
+  $("listBtns").style.display = cloudReady() ? "flex" : "none"; $("importBtn").style.display = cloudReady() ? "block" : "none";
   if (!sb) {
     box.innerHTML = `<div class="off">클라우드 미설정 — 기록 저장·이전 검사 비교가 꺼져 있습니다.<br>(index.html 상단 SUPABASE 설정, SETUP.md 참고)</div>`;
     $("localKeyBox").open = true;
@@ -1966,6 +1975,218 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 });
 document.addEventListener("keydown", e => { if (e.ctrlKey && e.key === "Enter") generate(); });
+// ════════════════════════════════════════
+//  특이증상 엑셀 일괄 업로드
+//  엑셀은 이 브라우저 안에서만 읽음 (외부 전송 없음) → 검사·면역치료·암호화 이름만 Supabase 에 저장
+// ════════════════════════════════════════
+// 면역치료 약 약어 (긴 이름 먼저)
+const IT_TOKENS = [
+  [/(?<![a-z가-힣])(?:actair|act|액트에어|액트)(?![a-z])/gi, "액트에어"],
+  [/(?<![a-z가-힣])(?:staloral|stl|sta|스타로랄|스타)(?![a-z])/gi, "스타로랄"],
+  [/(?<![a-z가-힣])(?:lais|lis|라이스정|라이스)(?![a-z])/gi, "라이스정"],
+];
+const IT_GENERIC = /(?<![a-z])(?:slit|면역치료)(?![a-z])/i;
+const IT_SKIP = /설명|상담|권유|권함|고려|안내|원치|거부|생각|예정|문의|보류|추천/;
+const IT_CHANGE = /변경|교체|바꿈|change|switch|->|→/i;
+const IT_STOP = /중단|중지|stop|d\/c|(?<![a-z])dc(?![a-z])|끊|포기|안\s*먹|drop/i;
+const IT_DONE = /완료|종료|끝냄|끝남|finish|complete/i;
+const IT_SIDE = /부작용|가려|붓|부어|복통|구토|두드러기|side/i;
+const IT_ADH = /불편|맛|순응|못\s*먹|귀찮|싫어/i;
+const isoOf = m => `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+
+function parseITMemo(memo) {
+  const ev = [], issues = [];
+  String(memo || "").split(/\r?\n/).forEach((line, idx) => {
+    const t = line.replace(/[-=~]{2,}>?/g, " ").replace(/\s+/g, " ").trim();
+    if (!t || isTestHead(t)) return;
+    const drugs = [];
+    IT_TOKENS.forEach(([re, d]) => { for (const m of t.matchAll(re)) drugs.push({ i: m.index, d }); });
+    if (!drugs.length && !IT_GENERIC.test(t)) return;
+    if (IT_SKIP.test(t)) return;
+    const dm = t.match(DATE_RE);
+    if (!dm) { issues.push("면역치료 날짜 없음: " + t); return; }
+    drugs.sort((a, b) => a.i - b.i);
+    const type = drugs.length && IT_CHANGE.test(t) ? "start"
+      : IT_STOP.test(t) ? "stop" : IT_DONE.test(t) ? "done" : "start";
+    if (type === "start" && !drugs.length) { issues.push("면역치료 약 이름 없음: " + t); return; }
+    ev.push({ date: isoOf(dm), type, drug: drugs.length ? drugs[drugs.length - 1].d : null, line: t, idx });
+  });
+  ev.sort((a, b) => a.date.localeCompare(b.date) || a.idx - b.idx);
+  const courses = [];
+  let cur = null;
+  const reasonOf = (t, def) => (IT_SIDE.test(t) ? "부작용" : IT_ADH.test(t) ? "복용 불편·순응도" : def);
+  ev.forEach(e => {
+    if (e.type === "start") {
+      if (cur && cur.drug === e.drug) return;            // 같은 약 다시 언급 = 계속 복용
+      if (cur) { cur.end_date = e.date; cur.end_reason = reasonOf(e.line, "기타"); cur.note += " / " + e.line; }
+      cur = { drug: e.drug, start_date: e.date, end_date: null, end_reason: null, note: "특이증상: " + e.line };
+      courses.push(cur);
+    } else {
+      if (!cur || (e.drug && e.drug !== cur.drug)) { issues.push("복용 중인 약과 맞지 않는 중단·완료: " + e.line); return; }
+      cur.end_date = e.date;
+      cur.end_reason = e.type === "done" ? "치료 완료" : reasonOf(e.line, "기타");
+      cur.note += " / " + e.line;
+      cur = null;
+    }
+  });
+  courses.forEach(c => { if (c.note.length > 300) c.note = c.note.slice(0, 300) + "…"; });
+  return { courses, issues };
+}
+
+function memoToTests(memo) {
+  const ex = extractAllergy(String(memo || "").replace(/\r/g, ""));
+  if (!ex || !ex.n) return { tests: [], issues: [] };
+  const blocks = [], issues = [];
+  splitBlocks(ex.text).forEach(t => blocks.push(parseBlock(t, "MAST120", blocks.length ? blocks[blocks.length - 1].date : null)));
+  const byKey = new Map();
+  blocks.forEach(b => {
+    const head = b.raw.split("\n")[0].slice(0, 40);
+    if (!b.date) { issues.push("검사 날짜 없음: " + head); return; }
+    if (!b.entries.length && !b.allNeg) { issues.push("검사 형식 오류: " + head); return; }
+    const unk = b.entries.filter(e => e.kind === "IgE" && !e.item).map(e => e.name);
+    if (unk.length) issues.push(`${b.date} 인식 못한 항목(DB 미등록으로 저장): ${unk.join(", ")}`);
+    byKey.set(b.date + "|" + b.panel, {
+      test_date: b.date, panel: b.panel, total_ige: b.ige || null,
+      results: b.entries.map(e => ({ name: e.name, canon: e.canon, kind: e.kind, cls: e.cls, value: e.value, op: e.op || null })),
+      raw_input: b.raw,
+    });
+  });
+  return { tests: [...byKey.values()], issues };
+}
+
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = res; s.onerror = () => rej(new Error("엑셀 읽기 도구를 불러오지 못했습니다 (인터넷 연결 확인)"));
+    document.head.appendChild(s);
+  });
+}
+
+let imp = null;   // { wb, rows, plan }
+function showImport() {
+  const el = $("report");
+  $("placeholder").style.display = "none";
+  el.style.display = "block";
+  el.innerHTML = `<h2 style="margin:0 0 6px;">📥 특이증상 엑셀 일괄 업로드</h2>
+    <div class="imp-help">엑셀은 <b>이 컴퓨터 브라우저 안에서만</b> 읽고, 알레르기 검사 결과·면역치료 기록·<b>암호화한 이름</b>만 클라우드에 저장합니다.
+    이미 저장된 검사(같은 번호·날짜·종류)와, 면역치료 기록이 이미 있는 환자의 면역치료는 건너뜁니다(손으로 고친 기록 보호).
+    받은 엑셀 파일은 <b>allergy-report 폴더에 넣지 마세요</b>(공개 GitHub 폴더).</div>
+    <input type="file" id="impFile" accept=".xlsx,.xls,.csv" onchange="impLoad(this.files[0])">
+    <div id="impCols"></div><div id="impOut"></div>`;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+async function impLoad(file) {
+  if (!file) return;
+  $("impCols").innerHTML = '<div style="color:#888;">읽는 중...</div>'; $("impOut").innerHTML = "";
+  try {
+    await loadXLSX();
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    imp = { wb };
+    const sheets = wb.SheetNames;
+    $("impCols").innerHTML = `<div class="imp-row">시트 <select id="impSheet" onchange="impSheet()">${sheets.map(s => `<option>${esc(s)}</option>`).join("")}</select></div><div id="impMap"></div>`;
+    impSheet();
+  } catch (e) { $("impCols").innerHTML = `<div class="ai-error">엑셀 읽기 실패: ${esc(e.message)}</div>`; }
+}
+function impSheet() {
+  const ws = imp.wb.Sheets[$("impSheet").value];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false });
+  imp.rows = rows;
+  const head = (rows[0] || []).map(String);
+  const guess = re => Math.max(0, head.findIndex(x => re.test(x)));
+  const opt = sel => head.map((x, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${String.fromCharCode(65 + (i % 26))}열: ${esc(String(x).slice(0, 20))}</option>`).join("");
+  $("impMap").innerHTML = `
+    <div class="imp-row">등록번호 <select id="impPid">${opt(guess(/번호|등록|차트|chart|id/i))}</select></div>
+    <div class="imp-row">이름 <select id="impName"><option value="-1">(저장 안 함)</option>${opt(guess(/이름|성명|환자명|name/i))}</select></div>
+    <div class="imp-row">특이증상 <select id="impMemo">${opt(guess(/특이|메모|증상|비고|memo/i))}</select></div>
+    <div class="imp-row"><label><input type="checkbox" id="impHead" checked> 첫 줄은 제목(머리글)</label> · 전체 ${rows.length}줄</div>
+    <button class="btn-sm" onclick="impAnalyze()">분석하기 (아직 저장 안 함)</button>`;
+}
+function impAnalyze() {
+  const pc = +$("impPid").value, nc = +$("impName").value, mc = +$("impMemo").value;
+  const rows = imp.rows.slice($("impHead").checked ? 1 : 0);
+  const byPid = new Map();
+  rows.forEach(r => {
+    const pid = String(r[pc] ?? "").trim().replace(/\.0$/, "");
+    const memo = String(r[mc] ?? "");
+    if (!pid || !/\S/.test(memo)) return;
+    if (!byPid.has(pid)) byPid.set(pid, { pid, name: "", memo: [] });
+    const p = byPid.get(pid);
+    if (nc >= 0 && !p.name) p.name = String(r[nc] ?? "").trim();
+    p.memo.push(memo);
+  });
+  const plan = [];
+  let nTests = 0, nIT = 0, nOngoing = 0;
+  byPid.forEach(p => {
+    const memo = p.memo.join("\n");
+    const t = memoToTests(memo), it = parseITMemo(memo);
+    if (!t.tests.length && !it.courses.length && !t.issues.length && !it.issues.length) return;
+    plan.push({ pid: p.pid, name: p.name, tests: t.tests, courses: it.courses, issues: [...t.issues, ...it.issues] });
+    nTests += t.tests.length; nIT += it.courses.length ? 1 : 0;
+    if (it.courses.some(c => !c.end_date)) nOngoing++;
+  });
+  imp.plan = plan;
+  const withIssue = plan.filter(p => p.issues.length);
+  const itRows = plan.filter(p => p.courses.length).slice(0, 300);
+  $("impOut").innerHTML = `
+    <div class="imp-sum">엑셀 환자 ${byPid.size.toLocaleString()}명 중 <b>알레르기 검사·면역치료 기록 있는 환자 ${plan.filter(p => p.tests.length || p.courses.length).length.toLocaleString()}명</b><br>
+      검사 ${nTests.toLocaleString()}건 · 면역치료 ${nIT.toLocaleString()}명 (현재 치료 중 ${nOngoing.toLocaleString()}명) · 확인 필요 ${withIssue.length.toLocaleString()}명</div>
+    <button class="btn-sm" id="impGo" onclick="impUpload()">☁ 클라우드에 업로드</button>
+    ${nc >= 0 && !nameKey ? '<div class="ai-error">이름 비밀문구가 설정되지 않아 이름은 저장하지 않습니다.</div>' : ""}
+    <div id="impProg"></div>
+    <details open><summary>면역치료 인식 결과 (${plan.filter(p => p.courses.length).length}명${itRows.length >= 300 ? ", 300명까지 표시" : ""})</summary>
+      <table class="imp-tbl"><tr><th>번호</th><th>약</th><th>시작</th><th>종료</th><th>사유</th></tr>
+      ${itRows.flatMap(p => p.courses.map(c => `<tr><td>${esc(p.pid)}</td><td>${esc(c.drug)}</td><td>${c.start_date}</td><td>${c.end_date || "<b>치료 중</b>"}</td><td>${esc(c.end_reason || "")}</td></tr>`)).join("")}</table></details>
+    <details><summary>확인 필요 (${withIssue.length}명) — 이 줄들은 저장되지 않습니다</summary>
+      <table class="imp-tbl"><tr><th>번호</th><th>내용</th></tr>
+      ${withIssue.slice(0, 1000).flatMap(p => p.issues.map(s => `<tr><td>${esc(p.pid)}</td><td>${esc(s)}</td></tr>`)).join("")}</table></details>`;
+}
+async function impUpload() {
+  const plan = imp && imp.plan;
+  if (!plan || !plan.length) return;
+  if (!confirm(`환자 ${plan.length}명의 기록을 클라우드에 올릴까요?`)) return;
+  $("impGo").disabled = true;
+  const prog = s => { $("impProg").innerHTML = `<div class="imp-sum">${s}</div>`; };
+  try {
+    prog("기존 기록 확인 중...");
+    const [oldT, oldC, oldP] = await Promise.all([
+      fetchAll(() => sb.from("allergy_tests").select("chart_no,test_date,panel")),
+      fetchAll(() => sb.from("immunotherapy_courses").select("chart_no")),
+      fetchAll(() => sb.from("patients").select("chart_no,name_enc")),
+    ]);
+    const tKey = new Set(oldT.map(t => `${t.chart_no}|${t.test_date}|${t.panel}`));
+    const cHas = new Set(oldC.map(c => c.chart_no));
+    const pHas = new Set(oldP.filter(p => p.name_enc).map(p => p.chart_no));
+    const tests = [], courses = [], pats = [];
+    let skipT = 0, skipC = 0;
+    for (const p of plan) {
+      p.tests.forEach(t => (tKey.has(`${p.pid}|${t.test_date}|${t.panel}`) ? skipT++ : tests.push({ chart_no: p.pid, ...t })));
+      if (p.courses.length) (cHas.has(p.pid) ? skipC++ : p.courses.forEach(c => courses.push({ chart_no: p.pid, ...c })));
+      if (nameKey && p.name && !pHas.has(p.pid) && (p.tests.length || p.courses.length))
+        pats.push({ chart_no: p.pid, name_enc: await encName(p.name) });
+    }
+    const send = async (table, rows, label) => {
+      for (let i = 0; i < rows.length; i += 500) {
+        prog(`${label} 올리는 중... ${Math.min(i + 500, rows.length).toLocaleString()} / ${rows.length.toLocaleString()}`);
+        const { error } = await sb.from(table).insert(rows.slice(i, i + 500));
+        if (error) throw new Error(`${label} 저장 실패 (${i}번째부터): ${error.message}`);
+      }
+    };
+    await send("allergy_tests", tests, "검사 결과");
+    await send("immunotherapy_courses", courses, "면역치료");
+    for (let i = 0; i < pats.length; i += 500) {
+      prog(`이름(암호화) 올리는 중... ${Math.min(i + 500, pats.length)} / ${pats.length}`);
+      const { error } = await sb.from("patients").upsert(pats.slice(i, i + 500));
+      if (error) throw new Error("이름 저장 실패: " + error.message);
+    }
+    prog(`✅ 완료 — 검사 ${tests.length.toLocaleString()}건, 면역치료 ${courses.length.toLocaleString()}건, 이름 ${pats.length.toLocaleString()}명 저장<br>
+      건너뜀: 이미 있던 검사 ${skipT.toLocaleString()}건, 면역치료 기록이 이미 있던 환자 ${skipC.toLocaleString()}명`);
+  } catch (e) {
+    prog(`<span style="color:#c0392b;">⚠ ${esc(e.message)}</span><br>다시 업로드하면 이미 올라간 것은 건너뛰고 이어서 올립니다.`);
+    $("impGo").disabled = false;
+  }
+}
 </script>
 </body>
 </html>
