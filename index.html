@@ -728,7 +728,7 @@ function extractMeta(raw) {
    /(?:^|[\s,;/])((?:s-?)?myco\w*\s*[:=]?\s*\d+\s*x?)/i,
    /(?:^|[\s,;/])((?:ink\d*|coi\d*|influ\w*|flu)\s*[:=]?\s*(?:(?:\(\s*[+_-]?\s*\)|[ab]?\s*[+-]+|\/|neg\w*|pos\w*|음성|양성)\s*)*)(?=[\s,;]|$)/i,   // 독감·코로나 신속검사 (ink2 -/, coi -/-)
    /(?:^|[\s,;])((?:hbs\s*-?\s*ab|anti-?hbs|b형\s*(?:간염\s*)?항체)\s*(?:\(\s*[+-]\s*\)|[+-]|양성|음성)?)/i,
-   /(?:^|[\s,;])((?:prot|protein|t\.?\s*prot|단백)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
+   /(?:^|[\s,;])((?:pro(?:t|tein)?|t\.?\s*prot|단백)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
    /(?:^|[\s,;])((?:iron|ferritin|ferr|fe|철분|페리틴|hb|hgb|crp|esr|tsh)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i].forEach(re => {
     for (let m; (m = text.match(re)); ) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
   });
