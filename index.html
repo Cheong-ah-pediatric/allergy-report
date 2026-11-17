@@ -798,8 +798,39 @@ function compactMast(text) {
   flush();
   return n ? { text: out.join("\n"), n } : null;
 }
+// 검사실 출력물(MAST) 통째 붙여넣기: "▣ 검 사 명 : MAST allergy(120종)" + "No Allergen IU Class" 표
+// → "mast ige 240.27" + "- Class N : 이름, 이름" (수치·머리글·구분선 제거)
+function convertLabMast(text) {
+  const lines = String(text).split("\n");
+  if (!lines.some(l => /mast/i.test(l) && /검\s*사\s*명|allergy|알레르기/i.test(l))) return null;
+  const head = lines.find(l => DATE_RE.test(l));
+  const im = text.match(/(?:총\s*면역\s*글로불린\s*e|total\s*ige)\s+([<>]?\s*\d+(?:\.\d+)?)/i);
+  const by = {};
+  let n = 0;
+  lines.forEach(l => {
+    if (/총\s*면역\s*글로불린|total\s*ige/i.test(l)) return;
+    const m = l.match(LEGACY_RE);
+    if (!m) return;
+    n++;
+    (by[+m[3]] = by[+m[3]] || []).push(legacyName(m[1]));
+  });
+  if (n < 3) return null;
+  const date = head ? isoOf(head.match(DATE_RE)) + " " : "";
+  const out = [`${date}mast${im ? " ige " + im[1].replace(/\s/g, "") : ""}`];
+  Object.keys(by).map(Number).sort((a, b) => a - b).filter(c => c > 0)
+    .forEach(c => out.push(`- Class ${c} : ${by[c].join(", ")}`));
+  if (out.length === 1) out[0] += " all neg";
+  return { text: out.join("\n"), n };
+}
 function onRawPaste() {
   setTimeout(() => {
+    const lab = convertLabMast($("rawInput").value);
+    if (lab) {
+      $("rawInput").value = lab.text;
+      $("panel").value = "MAST120"; onPanelChange();
+      $("convertNote").textContent = `✎ 검사실 MAST 결과표 ${lab.n}항목을 Class별로 정리했습니다 (수치 제외)${/\d{4}-\d\d-\d\d/.test(lab.text) ? "" : " — 검사일 칸을 확인하세요"}.`;
+      return;
+    }
     const cm = compactMast($("rawInput").value);
     if (cm) { $("rawInput").value = cm.text; $("convertNote").textContent = `✎ MAST 결과 ${cm.n}줄을 Class별로 정리했습니다 (수치 제외).`; }
     const conv = convertLegacy($("rawInput").value);
@@ -1569,6 +1600,8 @@ async function generate(opts = {}) {
     $("clinNote").value = [...new Set([...$("clinNote").value.split("\n").map(s => s.trim()).filter(Boolean), ...sn.notes])].join("\n");
   }
   const clinNotes = $("clinNote").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const lab = convertLabMast($("rawInput").value);
+  if (lab) $("rawInput").value = lab.text;
   const extracted = extractAllergy($("rawInput").value.trim());
   if (extracted && extracted.skipped) $("rawInput").value = extracted.text;
   const cm = compactMast($("rawInput").value);
