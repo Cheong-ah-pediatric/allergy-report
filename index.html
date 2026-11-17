@@ -546,7 +546,7 @@ const HINTS = {
       <code>2025-12-01 cap ige 974 dp 5 df 6 dpg 1.1 dfg 0.8</code><br>
       <code>흰자 3, 노른자 0, alb 2, muc 1</code><br>
       정수(0~6) = Class, 소수(13.38) = 수치(kU/L) · 날짜·cap ige 는 위 칸에 자동 입력<br>
-      dpg/dfg = Dp/Df IgG · alb = 오브알부민 · muc = 오보뮤코이드<br>
+      dpg/dfg = Dp/Df IgG · alb(al) = 오브알부민 · muc(mu) = 오보뮤코이드<br>
       옛 형식(순번 이름 수치 Class)을 붙여넣으면 자동 변환`,
 };
 const PLACEHOLDER = {
@@ -589,8 +589,8 @@ const EXTRA_ALIAS = {
   "호두": ["walnut"],
   "계란흰자": ["흰자", "ew", "white"],
   "계란노른자": ["노른자", "ey", "yolk"],
-  "난백알부민": ["alb", "abl", "ova", "ovalb", "ovalbu", "ovalbum", "ovalbumin", "알부민", "오브알부민", "오발부민"],
-  "난백점소": ["muc", "mcu", "ovomu", "ovomuc", "mucoid", "ovomucoid", "뮤코이드", "오보뮤코이드", "ovm", "omuc"],
+  "난백알부민": ["alb", "abl", "ova", "ovalb", "ovalbu", "ovalbum", "ovalbumin", "al", "알부민", "오브알부민", "오발부민"],
+  "난백점소": ["muc", "mcu", "ovomu", "ovomuc", "mucoid", "ovomucoid", "mu", "뮤코이드", "오보뮤코이드", "ovm", "omuc"],
 };
 const KEYMAP = {};
 function addKey(k, entry) {
@@ -726,6 +726,8 @@ function extractMeta(raw) {
   [/(?:^|[\s,;])(vit\.?\s*d\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
    /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i,
    /(?:^|[\s,;/])((?:s-?)?myco\w*\s*[:=]?\s*\d+\s*x?)/i,
+   /(?:^|[\s,;])((?:hbs\s*-?\s*ab|anti-?hbs|b형\s*(?:간염\s*)?항체)\s*(?:\(\s*[+-]\s*\)|[+-]|양성|음성)?)/i,
+   /(?:^|[\s,;])((?:prot|protein|t\.?\s*prot|단백)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
    /(?:^|[\s,;])((?:iron|ferritin|ferr|fe|철분|페리틴|hb|hgb|crp|esr|tsh)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i].forEach(re => {
     for (let m; (m = text.match(re)); ) { other.push(m[1].trim()); text = text.replace(m[1], " "); }
   });
