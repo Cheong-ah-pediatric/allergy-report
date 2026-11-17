@@ -931,6 +931,7 @@ function mergeVisit(v) {
     (t.results || []).forEach(r => {
       const k = r.canon || r.name;
       if ((r.kind || "IgE") === "IgG") { igg.set(k, { ...r, panel: t.panel }); return; }
+      if (t.panel === "MAST120" && r.value != null) r = { ...r, value: null, op: null };   // MAST 는 Class 만 표시 (예전에 수치째 저장된 기록 포함)
       const prev = ige.get(k);
       const also = prev ? [...(prev.also || []), { panel: prev.panel, cls: prev.cls, value: prev.value, op: prev.op }] : [];
       ige.set(k, { ...r, panel: t.panel, also });
