@@ -772,8 +772,33 @@ function convertLegacy(text) {
   });
   return { text: out.join("\n"), n: hits };
 }
+// MAST 결과를 "이름 수치 (class N)" 줄로 받은 경우 → 수치는 빼고 "- Class N : 이름, 이름" 형식으로 정리
+// (MAST 아래 줄에만 적용 — CAP 은 수치가 의미 있으므로 그대로)
+const VALCLS_RE = /^\s*[-•*]?\s*(.+?)\s+(?:[<>≥≤]=?\s*)?\d+(?:\.\d+)?\s*\(\s*class\s*([0-6])\s*\)\s*$/i;
+function compactMast(text) {
+  const out = [];
+  let isMast = false, run = [], n = 0;
+  const flush = () => {
+    if (!run.length) return;
+    const by = {};
+    run.forEach(([name, c]) => (by[c] = by[c] || []).push(name));
+    Object.keys(by).map(Number).sort((a, b) => a - b).filter(c => c > 0)
+      .forEach(c => out.push(`- Class ${c} : ${by[c].join(", ")}`));
+    n += run.length; run = [];
+  };
+  String(text).split("\n").forEach(l => {
+    if (DATE_RE.test(l) || PANEL_HEAD_RE.test(l)) { flush(); isMast = /(?:^|[\s,;/])mast(?=[\s\d:,;]|$)/i.test(l); out.push(l); return; }
+    const m = isMast && l.match(VALCLS_RE);
+    if (m) { run.push([m[1].trim(), +m[2]]); return; }
+    flush(); out.push(l);
+  });
+  flush();
+  return n ? { text: out.join("\n"), n } : null;
+}
 function onRawPaste() {
   setTimeout(() => {
+    const cm = compactMast($("rawInput").value);
+    if (cm) { $("rawInput").value = cm.text; $("convertNote").textContent = `✎ MAST 결과 ${cm.n}줄을 Class별로 정리했습니다 (수치 제외).`; }
     const conv = convertLegacy($("rawInput").value);
     if (!conv) return;
     $("rawInput").value = conv.text;
@@ -1509,7 +1534,7 @@ function loadVisit(i) {
   if (!v) return;
   $("testDate").value = v.end;
   $("ige").value = "";
-  $("rawInput").value = v.tests.map(t => splitNotes(rawWithHead(t)).text.trim()).join("\n\n");
+  $("rawInput").value = v.tests.map(t => { const s = splitNotes(rawWithHead(t)).text.trim(), c = compactMast(s); return c ? c.text : s; }).join("\n\n");
   $("clinNote").value = [...new Set(v.tests.flatMap(notesOf))].join("\n");
   generate({ stored: true });
 }
@@ -1542,6 +1567,8 @@ async function generate(opts = {}) {
   const clinNotes = $("clinNote").value.split("\n").map(s => s.trim()).filter(Boolean);
   const extracted = extractAllergy($("rawInput").value.trim());
   if (extracted && extracted.skipped) $("rawInput").value = extracted.text;
+  const cm = compactMast($("rawInput").value);
+  if (cm) $("rawInput").value = cm.text;
   const rawAll = $("rawInput").value.trim();
   if (!rawAll) { errEl.textContent = "검사 결과를 입력해주세요."; errEl.style.display = "block"; return; }
 
@@ -2041,7 +2068,8 @@ function memoToTests(memo) {
   const ex = extractAllergy(String(memo || "").replace(/\r/g, ""));
   if (!ex || !ex.n) return { tests: [], issues: [] };
   const blocks = [], issues = [];
-  splitBlocks(ex.text).forEach(t => blocks.push(parseBlock(t, "MAST120", blocks.length ? blocks[blocks.length - 1].date : null)));
+  const cm = compactMast(ex.text);
+  splitBlocks(cm ? cm.text : ex.text).forEach(t => blocks.push(parseBlock(t, "MAST120", blocks.length ? blocks[blocks.length - 1].date : null)));
   const byKey = new Map();
   blocks.forEach(b => {
     const head = b.raw.split("\n")[0].slice(0, 40);
