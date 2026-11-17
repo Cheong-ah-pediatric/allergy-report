@@ -725,6 +725,7 @@ function buildEntries(panel, raw) {
 
 // 입력 앞부분의 검사일·Total IgE 읽기: "2025-12-01 cap ige 974 dp 5 df 6 dpg 1.1 dfg 0.8"
 function extractMeta(raw) {
+  raw = noOutside(raw);   // 타병원 표시는 원문(raw_input)에 남기고 분석에서는 뺌
   let text = raw, date = null, ige = null;
   const dates = [...raw.matchAll(/(20\d{2})[-./](\d{1,2})[-./](\d{1,2})/g)];
   if (dates.length) {
@@ -860,11 +861,16 @@ const DATE_RE = /(20\d{2})[-./](\d{1,2})[-./](\d{1,2})/;
 // 날짜가 있는 줄, 또는 "cap"/"mast"로 시작하는 줄이 새 검사의 시작
 // (특이증상 기록처럼 "2026-07-31 mast 79 ... ↵ cap muc 4, ..." 로 이어 쓴 경우)
 const PANEL_HEAD_RE = /^\s*(?:cap|mast)\b/i;
+// 우리 병원이 아닌 곳에서 한 검사: "타병원", "인근", "외부" (예: "2022-03-03 타병원 mast ige 50", "인근 소아과 cap dp 3")
+const OUTSIDE_RE = /\(?\s*(?:타\s*병원|타\s*원|인근|외부)(?:\s*(?:병원|의원|소아과|소아청소년과|내과|이비인후과|피부과))?(?:\s*(?:에서|검사|결과|시행|f\/?u))*\s*\)?/i;
+const noOutside = s => String(s).replace(new RegExp(OUTSIDE_RE.source, "gi"), " ");
+const isOutside = t => OUTSIDE_RE.test(String((t && t.raw_input) || "").split("\n").filter(l => !NOTE_LINE_RE.test(l)).join("\n"));
 // ── 특이증상 칸 통째로 붙여넣기: 알레르기 검사(mast/cap) 부분만 골라냄 ──
 // 검사 시작 = 날짜와 mast/cap 이 함께 있는 줄, 또는 mast/cap 으로 시작하는 줄
 // 이어지는 줄 = Class 줄, (class N) 줄, 옛 표 형식, 알레르기 항목+숫자만 있는 줄 → 그 밖의 줄에서 검사 끝
 const CLASS_LINE_RE = /^[-•*]?\s*class\s*\d\s*[:\-]/i;
 function isTestHead(t) {
+  t = noOutside(t);
   return /(?:^|[\s,;])(?:mast|cap)(?=[\s\d:,;]|$)/i.test(t) && (DATE_RE.test(t) || PANEL_HEAD_RE.test(t));
 }
 function looksAllergyData(t) {
@@ -897,7 +903,7 @@ function splitBlocks(raw) {
   // 날짜(+cap/mast)만 있는 줄 = 다음 줄의 머리말 → 바로 이어지는 cap/mast 줄과 같은 검사
   const headOnly = () => cur.filter(x => x.trim()).every(x => /^\s*(20\d{2})[-./]\d{1,2}[-./]\d{1,2}\s*(?:cap|mast)?\s*$/i.test(x));
   raw.split("\n").forEach(l => {
-    const starts = DATE_RE.test(l) || (PANEL_HEAD_RE.test(l) && !headOnly());
+    const starts = DATE_RE.test(l) || (PANEL_HEAD_RE.test(noOutside(l)) && !headOnly());
     if (starts && cur.some(x => x.trim())) { blocks.push(cur.join("\n")); cur = []; }
     cur.push(l);
   });
@@ -1735,7 +1741,8 @@ async function generate(opts = {}) {
 
   const igeText = visitIgeText(visit, true);
   const title = multi ? "알레르기 검사 안내문 (MAST + 특이 IgE)" : numeric ? "특이 IgE 알레르기 검사 안내문" : "알레르기 항원 검사 안내문";
-  const dateText = visit.start === visit.end ? fmtDate(visit.start) : `${fmtDate(visit.start)} ~ ${fmtDate(visit.end).replace(/^\d+년 /, "")}`;
+  const dateText = (visit.start === visit.end ? fmtDate(visit.start) : `${fmtDate(visit.start)} ~ ${fmtDate(visit.end).replace(/^\d+년 /, "")}`)
+    + (visit.tests.some(isOutside) ? ` <span class="m">(${visit.tests.every(isOutside) ? "" : "일부 "}타병원 검사)</span>` : "");
   const html = `
     <div id="cloudStatus" class="cloud-status no-print"></div>
     ${notices}
@@ -1828,8 +1835,8 @@ async function generate(opts = {}) {
   if (showIT) $("itSlot").innerHTML = renderITSection(courses, trendIT);
 
   const ai = {
-    notes: clinNotes,
-    pastNotes: upto.slice(0, -1).map(v => ({ d: v.start, n: [...new Set(v.tests.flatMap(notesOf))] })).filter(x => x.n.length),
+    notes: [...clinNotes, ...visit.tests.filter(isOutside).map(t => `${t.test_date} ${panelLabel(t.panel)} 검사는 타병원에서 시행한 결과`)],
+    pastNotes: upto.slice(0, -1).map(v => ({ d: v.start, n: [...new Set([...v.tests.flatMap(notesOf), ...(v.tests.some(isOutside) ? ["타병원에서 시행한 검사"] : [])])] })).filter(x => x.n.length),
     visit, numeric, multi, pos, neg, cholinergic, igeMax, allNeg: allNegTests.length > 0,
     trend: upto.length > 1 ? trendText(upto) : null, nVisits: upto.length,
     it: showIT ? itText(courses, trendIT) : (iggE.length ? `- 면역치료 기록 없음\n- 이번 IgG: ${iggE.map(e => `${e.canon} ${valStr(e)} mg/L`).join(", ")}` : null),
