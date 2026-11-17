@@ -725,7 +725,7 @@ function buildEntries(panel, raw) {
 
 // 입력 앞부분의 검사일·Total IgE 읽기: "2025-12-01 cap ige 974 dp 5 df 6 dpg 1.1 dfg 0.8"
 function extractMeta(raw) {
-  raw = noOutside(raw);   // 타병원 표시는 원문(raw_input)에 남기고 분석에서는 뺌
+  raw = stripPet(noOutside(raw));   // 타병원·반려동물 표시는 원문(raw_input)에 남기고 분석에서는 뺌
   let text = raw, date = null, ige = null;
   const dates = [...raw.matchAll(/(20\d{2})[-./](\d{1,2})[-./](\d{1,2})/g)];
   if (dates.length) {
@@ -863,6 +863,15 @@ const DATE_RE = /(20\d{2})[-./](\d{1,2})[-./](\d{1,2})/;
 const PANEL_HEAD_RE = /^\s*(?:cap|mast)\b/i;
 // 우리 병원이 아닌 곳에서 한 검사: "타병원", "인근", "외부" (예: "2022-03-03 타병원 mast ige 50", "인근 소아과 cap dp 3")
 const OUTSIDE_RE = /\(?\s*(?:타\s*병원|타\s*원|인근|외부)(?:\s*(?:병원|의원|소아과|소아청소년과|내과|이비인후과|피부과))?(?:\s*(?:에서|검사|결과|시행|f\/?u))*\s*\)?/i;
+// 고양이(-), 개(_) = 집에서 키우지 않음 (알레르기 음성이 아님) → 검사 결과로 읽지 않음
+const PET_RE = /(?<![가-힣a-z])(고양이|cat|강아지|개|dog|반려견|애완견)\s*\(\s*[-_]\s*\)/gi;
+function stripPet(text) {
+  return String(text).split("\n").map(l => /class\s*[0-6]\s*:/i.test(l)
+    ? l.replace(PET_RE, (m, name) => name)   // "- Class 2 : 고양이(-)" → 결과는 그대로, 표시만 뺌
+    : l.replace(PET_RE, " ")).join("\n");      // "cap dp 4 cat(-)" → 결과 아님
+}
+const petNotes = raw => [...new Set([...String(raw || "").matchAll(PET_RE)].map(m => /고양이|cat/i.test(m[1]) ? "고양이" : "개"))]
+  .map(x => `집에서 ${x}를 키우지 않음`);
 const noOutside = s => String(s).replace(new RegExp(OUTSIDE_RE.source, "gi"), " ");
 const isOutside = t => OUTSIDE_RE.test(String((t && t.raw_input) || "").split("\n").filter(l => !NOTE_LINE_RE.test(l)).join("\n"));
 // ── 특이증상 칸 통째로 붙여넣기: 알레르기 검사(mast/cap) 부분만 골라냄 ──
@@ -1835,7 +1844,7 @@ async function generate(opts = {}) {
   if (showIT) $("itSlot").innerHTML = renderITSection(courses, trendIT);
 
   const ai = {
-    notes: [...clinNotes, ...visit.tests.filter(isOutside).map(t => `${t.test_date} ${panelLabel(t.panel)} 검사는 타병원에서 시행한 결과`)],
+    notes: [...clinNotes, ...new Set(visit.tests.flatMap(t => petNotes(t.raw_input))), ...visit.tests.filter(isOutside).map(t => `${t.test_date} ${panelLabel(t.panel)} 검사는 타병원에서 시행한 결과`)],
     pastNotes: upto.slice(0, -1).map(v => ({ d: v.start, n: [...new Set([...v.tests.flatMap(notesOf), ...(v.tests.some(isOutside) ? ["타병원에서 시행한 검사"] : [])])] })).filter(x => x.n.length),
     visit, numeric, multi, pos, neg, cholinergic, igeMax, allNeg: allNegTests.length > 0,
     trend: upto.length > 1 ? trendText(upto) : null, nVisits: upto.length,
