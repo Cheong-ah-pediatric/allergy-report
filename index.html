@@ -643,8 +643,27 @@ function osa(a, b) {
   }
   return d[m][n];
 }
+// 알레르기 항원이 아닌 것: 다른 혈액검사·신속검사·면역치료 약 이름 등 (특이사항에 같이 적힘)
+// "iorn 31"(iron 오타), "vtid 20", "act 시작"(액타이어) 처럼 오타·약어도 항원으로 읽지 않음
+const LAB_WORDS = ["iron", "siron", "fe", "sfe", "ferr", "ferritin", "tibc", "tsat", "transat", "vitd", "vitamind", "vit", "d3",
+  "crp", "esr", "tsh", "t4", "ft4", "tft", "hb", "hgb", "hct", "wbc", "rbc", "plt", "eos", "eso", "eosinophil",
+  "zn", "zinc", "ca", "cal", "calp", "calprotectin", "glu", "sglu", "tbil", "bil", "ast", "alt", "ida", "aso", "ebv",
+  "myco", "mycom", "smyco", "mycoplasma", "tdap", "pro", "prot", "protein", "ldl", "hdl", "chol", "lh", "fsh", "ts", "dheas",
+  "ige", "igg", "igm", "iga", "ig", "igr", "igre", "class", "act", "actair", "액타이어", "slit", "scit", "stl", "staloral",
+  "ion", "fkid", "cefa", "pt", "coi", "ink", "cov", "covid", "flu", "flua", "flub", "rsv", "noro", "rota", "adeno", "stool", "wnl"];
+const LAB_SET = new Set(LAB_WORDS);
+const labKey = s => loose(s).replace(/[0-9<>=:+\/≥≤%,]+/g, "");
+// 이름이 다른 검사(또는 그 오타)인지: 정확히 같거나, 4글자 이상이면 1글자 차이(뒤바뀜 포함)까지
+function isLabWord(name) {
+  const k = labKey(name);
+  if (!k || KEYMAP[k]) return false;
+  if (LAB_SET.has(k)) return true;
+  return k.length >= 4 && /^[a-z]+$/.test(k) && LAB_WORDS.some(w => w.length >= 4 && osa(k, w) <= 1);
+}
 function fuzzyKey(k) {
   if (k.length < 3) return null;                  // dp/df 같은 2글자는 보정하지 않음 (서로 1글자 차이)
+  if (isLabWord(k)) return null;                  // igg→egg, act→cat 처럼 다른 검사를 항원으로 바꾸지 않음
+  if (/^곰팡이류?$/.test(k)) return null;          // 그냥 "곰팡이"는 특정 곰팡이(빵곰팡이=리조푸스)로 바꾸지 않음
   const maxD = k.length >= 6 ? 2 : 1;
   let best = null, bestD = 9, tie = false;
   for (const key of Object.keys(KEYMAP)) {
@@ -659,6 +678,9 @@ function resolveName(name) {
   const k = loose(name);
   if (!k) return null;
   if (KEYMAP[k]) return { ...KEYMAP[k], fuzzy: false };
+  if (/[()（）]/.test(name)) {
+    for (const seg of String(name).split(/[()（）]/)) { const s = loose(seg); if (s && KEYMAP[s]) return { ...KEYMAP[s], fuzzy: false }; }
+  }
   const f = fuzzyKey(k);
   return f ? { ...KEYMAP[f], fuzzy: true } : null;
 }
@@ -710,7 +732,12 @@ function buildEntries(panel, raw) {
   // 형식으로 파싱: "- Class N : 이름, 이름" 줄이 있으면 그 형식, 아니면 "이름 수치/Class" 형식
   const mast = parseMast(raw);
   const numeric = !mast.list.length;
-  const { list, bad } = numeric ? parseNumeric(raw) : mast;
+  const parsed = numeric ? parseNumeric(raw) : mast;
+  const bad = parsed.bad, labs = [];
+  const list = parsed.list.filter(x => {
+    if (resolveName(x.name) || !isLabWord(x.name)) return true;
+    labs.push(`${x.name} ${x.op || ""}${x.value ?? ""}`.trim()); return false;
+  });
   const entries = list.map(x => {
     const r = resolveName(x.name);
     if (r && r.type === "marker")
@@ -726,7 +753,7 @@ function buildEntries(panel, raw) {
     return { name: x.name, canon: item ? item["항목명"] : null, kind: "IgE",
              cls, value, op: value == null ? "" : x.op, item, fuzzy: !!(r && r.fuzzy) };
   });
-  return { entries, bad };
+  return { entries, bad, labs };
 }
 
 // 입력 앞부분의 검사일·Total IgE 읽기: "2025-12-01 cap ige 974 dp 5 df 6 dpg 1.1 dfg 0.8"
@@ -748,7 +775,7 @@ function extractMeta(raw) {
   [/(?:^|[\s,;])(vit\.?\s*d\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
    /(?:^|[\s,;])(eos(?:inophil)?\s*[:=]?\s*\d+(?:\.\d+)?\s*%?)/i,
    /(?:^|[\s,;/])((?:s-?)?myco\w*\s*[:=]?\s*(?:\d+\s*x?|[+-]+|\(\s*[+_-]?\s*\)))/i,
-   /(?:^|[\s,;/])((?:ink[a-z0-9]*|coi[a-z0-9]*|co19|covid\w*|influ\w*|flu[a-z0-9]*)\s*[:=]?\s*(?:(?:\(\s*[+_-]?\s*\)|[ab]?\s*[+-]+|[ab](?![a-z0-9])|iv(?![a-z])|\/|neg\w*|pos\w*|음성|양성)\s*)*)(?=[\s,;]|$)/i,   // 독감·코로나 신속검사 (ink2 -/, coi -/-)
+   /(?:^|[\s,;/])((?:ink[a-z0-9]*|coi[a-z0-9]*|co19|covid\w*|influ\w*|flu[a-z0-9]*)\s*[:=]?\s*(?:(?:\(\s*[+_-]?\s*\)|[ab]?\s*[+-]|[ab](?![a-z0-9])|iv(?![a-z])|\/|neg\w*|pos\w*|음성|양성)\s*)*)(?=[\s,;]|$)/i,   // 독감·코로나 신속검사 (ink2 -/, coi -/-)
    /(?:^|[\s,;])((?:hbs\s*-?\s*ab|anti-?hbs|b형\s*(?:간염\s*)?항체)\s*(?:\(\s*[+-]\s*\)|[+-]|양성|음성)?)/i,
    /(?:^|[\s,;])((?:pro(?:t|tein)?|t\.?\s*prot|단백)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i,
    /(?:^|[\s,;])((?:iron|ferritin|ferr|fe|철분|페리틴|hb|hgb|crp|esr|tsh)\s*[:=]?\s*[<>]?\s*\d+(?:\.\d+)?)/i].forEach(re => {
@@ -978,7 +1005,8 @@ function parseBlock(text, fallbackPanel, fallbackDate) {
     || (fallbackPanel === "기타" ? "기타"
     : allNeg ? "MAST120"
     : conv ? "sIgE" : looksMast ? "MAST120" : parseNumeric(meta.text).list.length ? "sIgE" : fallbackPanel);
-  const { entries, bad } = meta.text ? buildEntries(panel, meta.text) : { entries: [], bad: [] };
+  const { entries, bad, labs } = meta.text ? buildEntries(panel, meta.text) : { entries: [], bad: [], labs: [] };
+  if (labs && labs.length) meta.other.push(...labs);
   return { raw: text.trim(), meta, conv, panel, date: meta.date || fallbackDate, ige: meta.ige, entries, bad, allNeg };
 }
 // 저장된 검사가 '전부 음성'이었는지 (양성 결과 없이 저장된 검사)
@@ -2365,13 +2393,27 @@ function impSheet() {
     <div class="imp-row"><label><input type="checkbox" id="impHead" checked> 첫 줄은 제목(머리글)</label> · 전체 ${rows.length}줄</div>
     <button class="btn-sm" onclick="impAnalyze()">분석하기 (아직 저장 안 함)</button>`;
 }
+// 줄바꿈이 없고 공백 2칸 이상으로 이어진 특이사항(CSV 내보내기) → 그 자리를 줄바꿈으로
+// 단, 쉼표·콜론으로 끝난 줄 뒤, "(" 로 시작하는 조각, 숫자만 있는 조각은 앞줄에 붙임
+function restoreMemoLines(s) {
+  s = String(s ?? "");
+  if (/\n/.test(s) || !/ {2}/.test(s)) return s;
+  const out = [];
+  s.split(/ {2,}/).map(x => x.trim()).filter(Boolean).forEach(p => {
+    const i = out.length - 1;
+    const head = /^[-•*]?\s*class\s*\d|^\s*(?:20\d{2}[-./]\d|cap\b|mast\b)/i.test(p);   // 새 Class 줄·검사 줄은 붙이지 않음
+    if (i >= 0 && !head && (/[,:]$/.test(out[i]) || /^[(,)]/.test(p) || /^(?:ige\s*)?[<>≥≤]?\s*\d+(?:\.\d+)?$/i.test(p))) out[i] += " " + p;
+    else out.push(p);
+  });
+  return out.join("\n");
+}
 function impAnalyze() {
   const pc = +$("impPid").value, nc = +$("impName").value, mc = +$("impMemo").value;
   const rows = imp.rows.slice($("impHead").checked ? 1 : 0);
   const byPid = new Map();
   rows.forEach(r => {
     const pid = String(r[pc] ?? "").trim().replace(/\.0$/, "");
-    const memo = String(r[mc] ?? "");
+    const memo = restoreMemoLines(r[mc]);
     if (!pid || !/\S/.test(memo)) return;
     if (!byPid.has(pid)) byPid.set(pid, { pid, name: "", memo: [] });
     const p = byPid.get(pid);
