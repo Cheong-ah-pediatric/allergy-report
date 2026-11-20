@@ -360,6 +360,8 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
 .imp-tbl{border-collapse:collapse;font-size:11px;margin:6px 0;width:100%;}
 .imp-tbl td,.imp-tbl th{border:1px solid #e0e4ec;padding:3px 6px;text-align:left;}
 .clin-note{min-height:60px;}
+.meta-row{display:grid;grid-template-columns:1.3fr 0.8fr 1fr;gap:6px;}
+.meta-row input,.meta-row select{min-width:0;}
 .neg-line{font-size:10.5px;color:#777;margin:-4px 0 10px;}
 .it-box{display:none;flex-direction:column;gap:5px;background:#f6f3fc;border:1px solid #e0d8f2;border-radius:6px;padding:8px 9px;font-size:11px;}
 .it-title{font-weight:700;color:#4a3c78;font-size:11.5px;}
@@ -450,20 +452,16 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
       <input type="text" id="pname" placeholder="홍길동">
     </div>
     <div class="form-group">
-      <label>Total IgE (IU/mL)</label>
-      <input type="text" id="ige" placeholder="예) 285">
-    </div>
-    <div class="form-group">
-      <label>검사일</label>
-      <input type="date" id="testDate">
-    </div>
-    <div class="form-group">
-      <label>검사 패널</label>
-      <select id="panel">
-        <option value="MAST120">MAST 120종</option>
-        <option value="sIgE">특이 IgE (수치 직접 입력)</option>
-        <option value="기타">기타</option>
-      </select>
+      <label>검사일 · Total IgE · 패널 <span class="lbl-note">— 결과를 붙여넣으면 자동으로 채워짐</span></label>
+      <div class="meta-row">
+        <input type="date" id="testDate">
+        <input type="text" id="ige" placeholder="IgE">
+        <select id="panel">
+          <option value="MAST120">MAST</option>
+          <option value="sIgE">CAP(수치)</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
     </div>
 
     <div class="panel-title" id="inputTitle" style="margin-top:4px;">검사 결과 붙여넣기</div>
@@ -475,10 +473,10 @@ button.link{border:none;background:none;color:var(--accent);cursor:pointer;font-
     <div class="ocr-row"><button type="button" class="btn-sm ghost" id="ocrBtn" onclick="$('ocrFile').click()">📷 결과지 이미지·PDF로 입력</button>
       <span class="lbl-note">캡처 후 아래 칸에 Ctrl+V 해도 됩니다</span>
       <input type="file" id="ocrFile" accept="image/*,application/pdf" multiple style="display:none" onchange="ocrFiles([...this.files]); this.value='';"></div>
-    <textarea id="rawInput" onpaste="onRawPaste(event)" placeholder="- Class 1 : 느릅나무, 미루나무, 소나무&#10;- Class 2 : 개암나무, 참나무&#10;- Class 3 : 오리나무&#10;..."></textarea>
+    <textarea id="rawInput" onpaste="onRawPaste(event)" placeholder="결과·특이증상·결과지 캡처(Ctrl+V)를 이 칸에&#10;2025-10-21 mast ige 51&#10;- Class 1 : 느릅나무, 미루나무&#10;- Class 2 : 개암나무, 참나무&#10;# 복숭아 먹고 발진으로 내원"></textarea>
     <div id="convertNote" class="convert-note"></div>
-    <div class="panel-title" style="margin-top:4px;">임상 참고사항 <span class="lbl-note">— 선택, AI 분석에 반영 · 보고서엔 인쇄 안 됨</span></div>
-    <textarea id="clinNote" class="clin-note" placeholder="예) 집먼지진드기 피부검사 양성&#10;복숭아 먹고 발진으로 내원&#10;이유식 애호박 이후 알레르기 의심"></textarea>
+    <div class="lbl-note" style="margin-top:-2px;"># 으로 시작하는 줄 = 임상 참고사항 (AI 분석에 반영 · 보고서엔 인쇄 안 됨) &nbsp;예) <code># 복숭아 먹고 발진으로 내원</code></div>
+    <textarea id="clinNote" style="display:none"></textarea>
 
     <div class="err" id="errMsg"></div>
     <button class="btn-gen" onclick="generate()">보고서 생성</button>
@@ -621,7 +619,7 @@ const EXTRA_ALIAS = {
   "계란흰자": ["흰자", "ew", "white"],
   "계란노른자": ["노른자", "ey", "yolk"],
   "난백알부민": ["alb", "abl", "ova", "ovalb", "ovalbu", "ovalbum", "ovalbumin", "al", "알부민", "오브알부민", "오발부민"],
-  "난백점소": ["muc", "mcu", "ovomu", "ovomuc", "mucoid", "ovomucoid", "mu", "뮤코이드", "오보뮤코이드", "ovm", "omuc"],
+  "난백점소": ["muc", "muco", "mucoi", "muciod", "mcu", "ovomu", "ovomuc", "mucoid", "ovomucoid", "mu", "뮤코이드", "오보뮤코이드", "ovm", "omuc"],
 };
 const KEYMAP = {};
 function addKey(k, entry) {
@@ -769,12 +767,15 @@ function buildEntries(panel, raw) {
 // 입력 앞부분의 검사일·Total IgE 읽기: "2025-12-01 cap ige 974 dp 5 df 6 dpg 1.1 dfg 0.8"
 function extractMeta(raw) {
   raw = stripPet(noOutside(raw));   // 타병원·반려동물 표시는 원문(raw_input)에 남기고 분석에서는 뺌
-  let text = raw, date = null, ige = null;
+  let text = raw, date = null, ige = null, badDate = null;
   const dates = [...raw.matchAll(/(20\d{2})[-./](\d{1,2})[-./](\d{1,2})/g)];
   if (dates.length) {
     const [, y, m, d] = dates[0];
     date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
     text = text.replace(dates[0][0], " ");
+    // 없는 날짜(2023-07-00, 2023-02-30)는 저장하면 서버가 거부 → 날짜 이상으로 표시
+    const dt = new Date(`${date}T00:00:00Z`);
+    if (isNaN(dt) || dt.toISOString().slice(0, 10) !== date) { badDate = date; date = null; }
   }
   const im = text.match(/(?:^|[\s,;])(?:cap|mast|total|t|총)[\s-]*ige\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/i)
           || text.match(/(?:^|[\s,;])(?:mast|cap)\s*[:=]?\s*([<>]?\s*\d+(?:\.\d+)?)/i)   // "mast 51" = Total IgE
@@ -796,7 +797,7 @@ function extractMeta(raw) {
   // 날짜 줄에 남은 'mast' / 'cap' 같은 꼬리표 제거 → 검사 종류 힌트로 사용
   const kind = /(?:^|\s)mast\b/i.test(raw) ? "MAST120" : /(?:^|\s)cap\b/i.test(raw) ? "sIgE" : null;
   text = text.replace(/(?:^|\s)(?:mast|cap)(?=\s|$)/gi, " ");
-  return { text: text.trim(), date, ige, other, kind, multiDate: dates.length > 1 };
+  return { text: text.trim(), date, ige, other, kind, multiDate: dates.length > 1, badDate };
 }
 
 // 옛 검사 결과 형식 변환: "2  D. pteronyssinus(진드기(Dp))   13.38 3" (순번 이름 수치 Class)
@@ -1695,8 +1696,10 @@ function loadVisit(i) {
   if (!v) return;
   $("testDate").value = v.end;
   $("ige").value = "";
-  $("rawInput").value = v.tests.map(t => { const s = splitNotes(rawWithHead(t)).text.trim(), c = compactMast(s); return c ? c.text : s; }).join("\n\n");
-  $("clinNote").value = [...new Set(v.tests.flatMap(notesOf))].join("\n");
+  const notes = [...new Set(v.tests.flatMap(notesOf))];
+  $("rawInput").value = v.tests.map(t => { const s = splitNotes(rawWithHead(t)).text.trim(), c = compactMast(s); return c ? c.text : s; }).join("\n\n")
+    + (notes.length ? "\n\n" + notes.map(n => "# " + n).join("\n") : "");
+  $("clinNote").value = "";
   generate({ stored: true });
 }
 async function deleteVisit(i) {
@@ -1721,10 +1724,8 @@ async function generate(opts = {}) {
   errEl.style.display = "none";
   // 특이증상 칸을 통째로 붙여넣었으면 알레르기 검사 부분만 남김 (입력란도 정리된 내용으로 바꿈)
   const sn = splitNotes($("rawInput").value);
-  if (sn.notes.length) {
-    $("rawInput").value = sn.text.trim();
-    $("clinNote").value = [...new Set([...$("clinNote").value.split("\n").map(s => s.trim()).filter(Boolean), ...sn.notes])].join("\n");
-  }
+  $("rawInput").value = sn.text.trim();
+  $("clinNote").value = [...new Set(sn.notes)].join("\n");
   const clinNotes = $("clinNote").value.split("\n").map(s => s.trim()).filter(Boolean);
   const lab = convertLabMast($("rawInput").value);
   if (lab) $("rawInput").value = lab.text;
@@ -1733,7 +1734,8 @@ async function generate(opts = {}) {
   const cm = compactMast($("rawInput").value);
   if (cm) $("rawInput").value = cm.text;
   const rawAll = $("rawInput").value.trim();
-  if (!rawAll) { errEl.textContent = "검사 결과를 입력해주세요."; errEl.style.display = "block"; return; }
+  const backNotes = () => { if (clinNotes.length) $("rawInput").value = $("rawInput").value.trim() + "\n\n" + clinNotes.map(n => "# " + n).join("\n"); };
+  if (!rawAll) { backNotes(); errEl.textContent = "검사 결과를 입력해주세요."; errEl.style.display = "block"; return; }
 
   // 날짜 줄마다 검사 하나 — MAST·CAP 을 함께 붙여넣으면 각각 저장하고 보고서는 하나로
   const fieldDate = $("testDate").value || todayISO();
@@ -1741,11 +1743,12 @@ async function generate(opts = {}) {
   const blocks = [];
   splitBlocks(rawAll).forEach(t => blocks.push(parseBlock(t, $("panel").value, blocks.length ? blocks[blocks.length - 1].date : fieldDate)));
   if (blocks.some(b => b.conv)) $("rawInput").value = blocks.map(b => b.raw).join("\n\n");
+  if (clinNotes.length) $("rawInput").value = $("rawInput").value.trim() + "\n\n" + clinNotes.map(n => "# " + n).join("\n");
   if (blocks.length === 1 && !blocks[0].ige && $("ige").value.trim()) blocks[0].ige = $("ige").value.trim();
   const empty = blocks.filter(b => !b.entries.length && !b.allNeg);
   if (empty.length) {
     errEl.textContent = `형식 오류 (${empty.map(b => b.raw.split("\n")[0].slice(0, 25)).join(", ")}): "- Class 1 : 항원명, 항원명" 또는 "dp 5, df 6" 형식으로 입력하세요.`;
-    errEl.style.display = "block"; return;
+    errEl.style.display = "block"; backNotes(); return;
   }
   const latest = blocks.reduce((a, b) => (b.date >= a.date ? b : a));
   $("testDate").value = latest.date;
@@ -2257,6 +2260,7 @@ function memoToTests(memo) {
   const byKey = new Map();
   blocks.forEach(b => {
     const head = b.raw.split("\n")[0].slice(0, 40);
+    if (b.meta.badDate) { I("미저장", `검사 날짜 이상 (${b.meta.badDate})`, b.raw); return; }
     if (!b.date) { I("미저장", "검사 날짜 없음", b.raw); return; }
     if (!b.entries.length && !b.allNeg) { I("미저장", "검사 결과 형식 오류", b.raw); return; }
     const unk = b.entries.filter(e => e.kind === "IgE" && !e.item).map(e => e.name);
@@ -2372,7 +2376,8 @@ function applyOCR(j) {
     $("pid").value = chart; $("pid").dispatchEvent(new Event("input"));
   }
   if (name && name !== curName && (!curName || confirm(`결과지 이름 '${name}' 으로 바꿀까요? (지금: ${curName})`))) $("pname").value = name;
-  $("rawInput").value = r.text;
+  const keepNotes = splitNotes($("rawInput").value).notes;
+  $("rawInput").value = r.text + (keepNotes.length ? "\n\n" + keepNotes.map(n => "# " + n).join("\n") : "");
   if (r.date) $("testDate").value = r.date;
   $("ige").value = (r.text.match(/ige\s+(\S+)/) || [])[1] || "";
   $("panel").value = r.isCap ? "sIgE" : "MAST120"; onPanelChange();
