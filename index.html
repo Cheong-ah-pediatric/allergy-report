@@ -1041,6 +1041,11 @@ function parseBlock(text, fallbackPanel, fallbackDate) {
   const an = meta.text.match(ALL_NEG_RE);
   if (an) { allNeg = true; meta.text = meta.text.replace(an[1], " ").trim(); }
   else if (NEG_ONLY_RE.test(meta.text)) { allNeg = true; meta.text = ""; }
+  else {
+    // "cap (_)" ↵ "stool (_)" 처럼 음성 표시 아래 다른 검사 줄만 붙은 경우도 전부 음성
+    const ls = meta.text.split("\n"), core = [ls[0], ...ls.slice(1).filter(l => !isSideLine(l.trim()))].join(" ").trim();
+    if (ls.length > 1 && NEG_ONLY_RE.test(core)) { allNeg = true; meta.text = ""; }
+  }
   const looksMast = parseMast(meta.text).list.length > 0;
   const panel = meta.kind
     || (fallbackPanel === "기타" ? "기타"
@@ -2477,8 +2482,13 @@ function fixMemoDates(s) {
   const out = [];
   lines.forEach(l => {
     const i = out.length - 1;
-    if (i >= 0 && /^\s*20\d{2}[-./]\d{1,2}[-./]\d{1,2}\s*$/.test(out[i]) && PANEL_HEAD_RE.test(l)) out[i] = out[i].trim() + " " + l.trim();
-    else out.push(l);
+    if (i >= 0 && /^\s*20\d{2}[-./]\d{1,2}[-./]\d{1,2}\s*$/.test(out[i]) && PANEL_HEAD_RE.test(l)) { out[i] = out[i].trim() + " " + l.trim(); return; }
+    // 날짜 + 다른 검사만 있는 줄 ↵ 날짜 없는 mast/cap 줄: "2026-10-27 vitD 24.8, iron 44" ↵ "mast total IgE 76" → 그 날짜의 검사
+    const dm = i >= 0 && out[i].match(/^\s*(20\d{2}[-./]\d{1,2}[-./]\d{1,2})\s+(.+)$/);
+    if (dm && PANEL_HEAD_RE.test(l) && !DATE_RE.test(l) && !/(?:^|[\s,;])(?:mast|cap)(?=[\s\d:,;]|$)/i.test(dm[2]) && isSideLine(dm[2].trim())) {
+      out[i] = dm[1] + " " + l.trim(); out.push(dm[2].trim()); return;
+    }
+    out.push(l);
   });
   return out.join("\n");
 }
