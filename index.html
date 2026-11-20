@@ -1004,6 +1004,8 @@ function extractAllergy(raw) {
     if (inBlock && glue(keep, t)) { used.add(t); return; }
     if (inBlock && looksAllergyData(t)) { keep.push(t); used.add(t); return; }
     if (inBlock && isSideLine(t)) { keep.push(t); used.add(t); return; }
+    const an = t.match(ALL_NEG_RE);
+    if (inBlock && (NEG_ONLY_RE.test(t) || (an && isSideLine(t.replace(an[1], " ").trim() || "0")))) { keep.push(t); used.add(t); return; }
     if (!inBlock && CLASS_LINE_RE.test(t)) { pend.push({ s: t, src: [t] }); return; }
     if (!inBlock && pend.length) {
       const arr = pend.map(x => x.s);
@@ -1028,7 +1030,7 @@ function splitBlocks(raw) {
   return blocks;
 }
 // "all neg", "all (-)", "모두 음성" 또는 결과 자리에 "(-)" / "neg" / "음성"만 = 검사 항목 전부 음성
-const ALL_NEG_RE = /(?:^|[\s,;])(all\s*(?:neg(?:ative)?|\(\s*[-_]\s*\)|음성)|(?:전부|모두|전체)\s*음성)(?=[\s,;]|$)/i;
+const ALL_NEG_RE = /(?:^|[\s,;])(a?l{2,3}\s*(?:neg(?:ative)?|\(\s*[-_]\s*\)|음성)|(?:전부|모두|전체)\s*음성)(?=[\s,;.]|$|vit|iron|ferr|pro|ida|tft)/i;
 const NEG_ONLY_RE = /^\s*(?:neg(?:ative)?|\(\s*[-_]\s*\)|음성|[-_])\s*$/i;
 function parseBlock(text, fallbackPanel, fallbackDate) {
   const conv = convertLegacy(text);
@@ -2463,13 +2465,25 @@ function restoreMemoLines(s) {
   });
   return out.join("\n");
 }
+function fixMemoDates(s) {
+  const cy = new Date().getFullYear() % 100;
+  const lines = String(s).split("\n").map(l => l.replace(/^(\s*)(\d{2})([-.])(\d{1,2})\3(\d{1,2})(?![\d.])/, (m, sp, y, sep, mo, d) =>
+    (+y >= 10 && +y <= cy && +mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31) ? `${sp}20${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}` : m));
+  const out = [];
+  lines.forEach(l => {
+    const i = out.length - 1;
+    if (i >= 0 && /^\s*20\d{2}[-./]\d{1,2}[-./]\d{1,2}\s*$/.test(out[i]) && PANEL_HEAD_RE.test(l)) out[i] = out[i].trim() + " " + l.trim();
+    else out.push(l);
+  });
+  return out.join("\n");
+}
 function impAnalyze() {
   const pc = +$("impPid").value, nc = +$("impName").value, mc = +$("impMemo").value;
   const rows = imp.rows.slice($("impHead").checked ? 1 : 0);
   const byPid = new Map();
   rows.forEach(r => {
     const pid = String(r[pc] ?? "").trim().replace(/\.0$/, "");
-    const memo = restoreMemoLines(r[mc]);
+    const memo = fixMemoDates(restoreMemoLines(r[mc]));
     if (!pid || !/\S/.test(memo)) return;
     if (!byPid.has(pid)) byPid.set(pid, { pid, name: "", memo: [] });
     const p = byPid.get(pid);
