@@ -600,6 +600,13 @@ const EXTRA_ALIAS = {
   "저장진드기": ["tyrophagusputrescentiae", "tyrophagus"],
   "저장진드기(T)": ["저장진드기tp", "저장진드기(tp)"],
   "알터나리아": ["alternariaalternata"],
+  // 옛 MAST 결과지 이름 (특이사항 일괄 업로드에서 확인)
+  "물푸레나무": ["물푸레"],
+  "명아주과풀": ["명아줏과풀", "명아줏과풀수송나물류", "명아주과풀수송나물류"],
+  "칸디다": ["칸디다곰팡이"],
+  "클라도스포리움": ["cladosporiumherbarum"],
+  "아스퍼질러스": ["aspergillusfumigatus"],
+  "페니실리움": ["penicilliumnotatum"],
   "꿀벌": ["honeybee"],
   "a-lactoalbumin": ["alac", "alact", "alpha-lac", "alphalac", "ala", "알파락트", "알파락트알부민"],
   "b-lactoglobulin": ["blac", "blact", "beta-lac", "betalac", "blg", "베타락토", "베타락토글로불린"],
@@ -958,22 +965,44 @@ function looksAllergyData(t) {
   const xs = parseNumeric(t).list;
   return xs.length > 0 && xs.every(x => resolveName(x.name));
 }
+// 줄바꿈으로 잘린 이름 조각: "름", "무, 미역취국화, 복숭아", "(수송나물류)" (콜론·날짜 없는 짧은 조각)
+const WRAP_RE = /^(?![-•*]?\s*class\s*\d)(?!.*(?:20\d{2}[-./]\d|:))(?:\(.*|[가-힣a-z]{1,4}|[가-힣a-z()\s]{1,10},.*)$/i;
 function extractAllergy(raw) {
   const lines = raw.split("\n");
   if (!lines.some(l => isTestHead(l.trim()))) return null;
-  const keep = [];
-  let inBlock = false, n = 0, skipped = 0;
+  const keep = [], used = new Set();
+  let inBlock = false, n = 0, skipped = 0, pend = [];
+  // 의사랑 메모칸이 글자 수로 줄을 바꿔 낱말이 잘린 경우: "- Class 1 : 명아주, 털비" ↵ "름" → 앞 줄에 붙임
+  const glue = (arr, t) => {
+    const last = arr[arr.length - 1];
+    if (!last || !CLASS_LINE_RE.test(last) || !WRAP_RE.test(t)) return false;
+    if (/,$/.test(last) || /^\(/.test(t)) { arr[arr.length - 1] = last + " " + t; return true; }
+    // 잘린 이름은 이어 붙였을 때 아는 항원이 되는 경우만 ("털비"+"름"=털비름 O, "고양이"+"호전" X)
+    const tail = last.split(/[:,]/).pop().trim(), head = t.split(",")[0].trim();
+    const r = resolveName(tail + head);
+    if (!r || r.fuzzy || (KEYMAP[loose(tail)] && !KEYMAP[loose(tail + head)])) return false;
+    arr[arr.length - 1] = last + t; return true;
+  };
   lines.forEach(l => {
     const t = l.trim();
     if (!t) return;
     if (isTestHead(t)) {
       if (DATE_RE.test(t)) { if (keep.length) keep.push(""); n++; }
-      keep.push(t); inBlock = true; return;
+      keep.push(t); used.add(t); inBlock = true;
+      // Class 줄을 날짜 줄보다 먼저 적은 경우: "Class 2 : 쑥" ↵ "Class 5 : 고양이" ↵ "2021-02-10 mast ige184"
+      if (pend.length && DATE_RE.test(t)) { keep.push(...pend.map(x => x.s)); pend.forEach(x => x.src.forEach(s => used.add(s))); }
+      pend = []; return;
     }
-    if (inBlock && looksAllergyData(t)) { keep.push(t); return; }
-    inBlock = false; skipped++;
+    if (inBlock && glue(keep, t)) { used.add(t); return; }
+    if (inBlock && looksAllergyData(t)) { keep.push(t); used.add(t); return; }
+    if (!inBlock && CLASS_LINE_RE.test(t)) { pend.push({ s: t, src: [t] }); return; }
+    if (!inBlock && pend.length) {
+      const arr = pend.map(x => x.s);
+      if (glue(arr, t)) { pend[pend.length - 1].s = arr[arr.length - 1]; pend[pend.length - 1].src.push(t); return; }
+    }
+    inBlock = false; skipped++; pend = [];
   });
-  return { text: keep.join("\n"), n, skipped };
+  return { text: keep.join("\n"), n, skipped, used };
 }
 
 function splitBlocks(raw) {
@@ -2199,7 +2228,7 @@ function memoToTests(memo) {
   const issues = [];
   const I = (lv, why, line) => issues.push({ lv, why, line: String(line).trim().slice(0, 300) });
   // 1) 검사 관련 단어가 있거나 검사 바로 아래 줄인데 골라내지 못한 줄
-  const kept = new Set(ex ? ex.text.split("\n").map(s => s.trim()).filter(Boolean) : []);
+  const kept = new Set(ex ? [...ex.text.split("\n").map(s => s.trim()).filter(Boolean), ...(ex.used || [])] : []);
   let prevKept = false;
   text.split("\n").forEach(l => {
     const t = l.trim();
