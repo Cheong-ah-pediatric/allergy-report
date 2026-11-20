@@ -644,12 +644,12 @@ function osa(a, b) {
   return d[m][n];
 }
 // 알레르기 항원이 아닌 것: 다른 혈액검사·신속검사·면역치료 약 이름 등 (특이사항에 같이 적힘)
-// "iorn 31"(iron 오타), "vtid 20", "act 시작"(액타이어) 처럼 오타·약어도 항원으로 읽지 않음
+// "iorn 31"(iron 오타), "vtid 20", "act 시작"(액트에어), "was"(아목시실린 주사) 처럼 오타·약어도 항원으로 읽지 않음
 const LAB_WORDS = ["iron", "siron", "fe", "sfe", "ferr", "ferritin", "tibc", "tsat", "transat", "vitd", "vitamind", "vit", "d3",
   "crp", "esr", "tsh", "t4", "ft4", "tft", "hb", "hgb", "hct", "wbc", "rbc", "plt", "eos", "eso", "eosinophil",
   "zn", "zinc", "ca", "cal", "calp", "calprotectin", "glu", "sglu", "tbil", "bil", "ast", "alt", "ida", "aso", "ebv",
   "myco", "mycom", "smyco", "mycoplasma", "tdap", "pro", "prot", "protein", "ldl", "hdl", "chol", "lh", "fsh", "ts", "dheas",
-  "ige", "igg", "igm", "iga", "ig", "igr", "igre", "class", "act", "actair", "액타이어", "slit", "scit", "stl", "staloral",
+  "ige", "igg", "igm", "iga", "ig", "igr", "igre", "class", "act", "actair", "액트에어", "액트", "was", "slit", "scit", "stl", "staloral",
   "ion", "fkid", "cefa", "pt", "coi", "ink", "cov", "covid", "flu", "flua", "flub", "rsv", "noro", "rota", "adeno", "stool", "wnl"];
 const LAB_SET = new Set(LAB_WORDS);
 const labKey = s => loose(s).replace(/[0-9<>=:+\/≥≤%,]+/g, "");
