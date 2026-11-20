@@ -970,6 +970,11 @@ function looksAllergyData(t) {
 }
 // 줄바꿈으로 잘린 이름 조각: "름", "무, 미역취국화, 복숭아", "(수송나물류)" (콜론·날짜 없는 짧은 조각)
 const WRAP_RE = /^(?![-•*]?\s*class\s*\d)(?!.*(?:20\d{2}[-./]\d|:))(?:\(.*|[가-힣a-z]{1,4}|[가-힣a-z()\s]{1,10},.*)$/i;
+function isSideLine(t) {
+  if (DATE_RE.test(t) || CLASS_LINE_RE.test(t) || /^[-=~_*>\s]+$/.test(t)) return false;
+  const rest = extractMeta(t).text.split(/[\s,;:]+/).filter(w => w && !/^[\d.%<>+\-()_]+$/.test(w) && !isLabWord(w));
+  return rest.length === 0;
+}
 function extractAllergy(raw) {
   const lines = raw.split("\n");
   if (!lines.some(l => isTestHead(l.trim()))) return null;
@@ -998,6 +1003,7 @@ function extractAllergy(raw) {
     }
     if (inBlock && glue(keep, t)) { used.add(t); return; }
     if (inBlock && looksAllergyData(t)) { keep.push(t); used.add(t); return; }
+    if (inBlock && isSideLine(t)) { keep.push(t); used.add(t); return; }
     if (!inBlock && CLASS_LINE_RE.test(t)) { pend.push({ s: t, src: [t] }); return; }
     if (!inBlock && pend.length) {
       const arr = pend.map(x => x.s);
@@ -2224,6 +2230,7 @@ function parseITMemo(memo) {
 // 알레르기 검사처럼 보이는 줄 / 생략 표시
 const TEST_WORD_RE = /(?<![a-z])(?:mast|cap|ige)(?![a-z])|알레르기\s*검사|allergy\s*test|class\s*[0-6]|(?<![a-z])(?:dp|df)\s*[0-6](?![\d.])/i;
 const ABBR_RE = /\.{2,}|…|(?:^|[\s,(])(?:등|외|생략|이하\s*생략|etc\.?)(?=$|[\s,.)])/i;
+const VAX_LINE_RE = /★|박씨|보령|지씨|gsk|(?<![a-z])sk(?![a-z])|일양|코박스|tdap|수두\s*\d|(?<![가-힣])일\s*\d/i;   // 접종 기록 줄
 const CONT_RE = /[가-힣a-z)]\s*[0-6](?![\d.])/i;   // "쑥3", "버드나무 2" 처럼 이름+Class 로 보이는 줄
 function memoToTests(memo) {
   const text = String(memo || "").replace(/\r/g, "");
@@ -2238,7 +2245,7 @@ function memoToTests(memo) {
     if (!t || /^[-=~_*>\s]+$/.test(t)) { prevKept = false; return; }
     if (kept.has(t)) { prevKept = true; return; }
     if (TEST_WORD_RE.test(t) && !/^\s*#|참고\s*:/.test(t)) I("미저장", "검사 관련 줄인데 형식을 못 읽음", t);
-    else if (prevKept && CONT_RE.test(t) && !DATE_RE.test(t)) I("미저장", "검사 결과 바로 아래 줄인데 못 읽음 (모르는 항목명?)", t);
+    else if (prevKept && CONT_RE.test(t) && !DATE_RE.test(t) && !VAX_LINE_RE.test(t)) I("미저장", "검사 결과 바로 아래 줄인데 못 읽음 (모르는 항목명?)", t);
     prevKept = false;
   });
   if (!ex || !ex.n) return { tests: [], issues };
@@ -2431,7 +2438,24 @@ function restoreMemoLines(s) {
   s = String(s ?? "");
   if (/\n/.test(s) || !/ {2}/.test(s)) return s;
   const out = [];
-  s.split(/ {2,}/).map(x => x.trim()).filter(Boolean).forEach(p => {
+  const ps = s.split(/ {2,}/).map(x => x.trim()).filter(Boolean), pieces = [];
+  const IDX = /^\d{1,3}$/, VAL = /^((?:[<>≥≤]=?)?\s*\d+(?:\.\d+)?)(?:\s+([0-6]))?$/;
+  for (let i = 0; i < ps.length; i++) {
+    const nm = ps[i + 1] || "";
+    if (IDX.test(ps[i]) && /[a-z가-힣]/i.test(nm)) {
+      if (/total\s*ige|총\s*ige/i.test(nm) && /^(?:positive|negative)?\s*[<>]?\s*\d/i.test(ps[i + 2] || "")) { i += 2; continue; }   // Total IgE 줄은 날짜 줄에 이미 있음
+      const v = (ps[i + 2] || "").match(VAL);
+      if (v) {
+        let j = i + 2;
+        // 수치 다음 숫자 하나가 Class 칸인지 다음 순번인지: 그 뒤가 또 숫자(순번)면 Class
+        if (!v[2] && /^[0-6]$/.test(ps[j + 1] || "") && (IDX.test(ps[j + 2] || "") || j + 2 >= ps.length || /^-{3,}/.test(ps[j + 2]))) j++;
+        pieces.push(`${ps[i]} ${nm} ${v[1].replace(/\s/g, "")} ${mastClassOf(v[1].match(/[<>≥≤]=?/)?.[0], v[1].replace(/[^\d.]/g, ""))}`);
+        i = j; continue;
+      }
+    }
+    pieces.push(ps[i]);
+  }
+  pieces.forEach(p => {
     const i = out.length - 1;
     const head = /^[-•*]?\s*class\s*\d|^\s*(?:20\d{2}[-./]\d|cap\b|mast\b)/i.test(p);   // 새 Class 줄·검사 줄은 붙이지 않음
     if (i >= 0 && !head && (/[,:]$/.test(out[i]) || /^[(,)]/.test(p) || /^(?:ige\s*)?[<>≥≤]?\s*\d+(?:\.\d+)?$/i.test(p))) out[i] += " " + p;
